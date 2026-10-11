@@ -2,9 +2,13 @@ name: License Header Check
 
 on:
   push:
-    branches: [ main, master ]
+    branches: 
+      - main
+      - master
   pull_request:
-    branches: [ main, master ]
+    branches: 
+      - main
+      - master
 
 permissions:
   contents: read
@@ -15,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Check License Header
         uses: apache/skywalking-eyes/header@main      # always prefer to use a revision instead of `main`.
