@@ -30,8 +30,8 @@ jobs:
 
       - name: Install build tools
         run: |
-          sudo apt-get update
-          sudo apt-get install -y \
+          sudo apt update
+          sudo apt install -y \
             ninja-build \
             python3 \
             python3-pip
@@ -57,6 +57,9 @@ jobs:
             ${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}
           restore-keys: |
             ${{ runner.os }}-${{ runner.arch }}-vcpkg-
+      
+      - name: Create vcpkg binary cache directory
+        run: mkdir -p "${VCPKG_DEFAULT_BINARY_CACHE}"
 
       - name: Configure
         run: |
