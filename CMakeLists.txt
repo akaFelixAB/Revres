@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-cmake_minimum_required(VERSION 4.3.0)
+cmake_minimum_required(VERSION 3.20.0)
 project(VeloxServ VERSION 0.1.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -32,7 +32,7 @@ find_package(Boost REQUIRED COMPONENTS asio beast url)
 find_package(tomlplusplus REQUIRED)
 find_package(nlohmann_json REQUIRED)
 find_package(spdlog REQUIRED)
-find_package(Catch2 REQUIRED)
+find_package(Catch2 3 REQUIRED)
 
 set(CMAKE_EXPORT_NO_PACKAGE_REGISTRY ON)
 set(CMAKE_NO_SYSTEM_FROM_IMPORTED ON) 
@@ -92,7 +92,7 @@ set_tests_properties(
 )
 
 # Unit Tests
-file(GLOB_RECURSE TEST_SOURCES "tests/*.cpp")
+file(GLOB_RECURSE TEST_SOURCES CONFIGURE_DEPENDS "tests/*.cpp")
 add_executable(unit_tests ${TEST_SOURCES})
 
 target_link_libraries(unit_tests PRIVATE Catch2::Catch2WithMain)
