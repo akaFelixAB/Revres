@@ -1,0 +1,76 @@
+name: Build and Test
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    name: Build and test
+    runs-on: ubuntu-24.04
+
+    env:
+      VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+      VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}/.vcpkg-cache
+      BUILD_DIR: build/debug/linux-vcpkg-ninja-gcc-debug
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            ninja-build \
+            python3 \
+            python3-pip
+
+      - name: Checkout vcpkg
+        uses: actions/checkout@v7
+        with:
+          repository: microsoft/vcpkg
+          path: vcpkg
+          fetch-depth: 1
+
+      - name: Bootstrap vcpkg
+        run: |
+          ./vcpkg/bootstrap-vcpkg.sh \
+            -disableMetrics
+
+      - name: Restore vcpkg binary cache
+        uses: actions/cache@v6
+        with:
+          path: .vcpkg-cache
+          key: >-
+            ${{ runner.os }}-${{ runner.arch }}-vcpkg-
+            ${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-vcpkg-
+
+      - name: Configure
+        run: |
+          cmake --preset linux-vcpkg-ninja-gcc-debug
+
+      - name: Build
+        run: |
+          cmake \
+            --build "${BUILD_DIR}" \
+            --parallel
+
+      - name: Run CTest
+        run: |
+          ctest \
+            --test-dir "${BUILD_DIR}" \
+            --output-on-failure \
+            --parallel 2
