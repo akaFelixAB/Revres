@@ -43,6 +43,7 @@ add_library(VeloxServCore STATIC
     src/ConfigValidator.cpp
     src/ConfigException.cpp
     src/ResponseFactory.cpp
+    src/MimeTypes.cpp
     src/HttpServer.cpp
     src/HttpSession.cpp
     src/Logger.cpp
