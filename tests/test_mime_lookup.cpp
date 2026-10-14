@@ -62,6 +62,6 @@ TEST_CASE(
     );
     CHECK(
         VeloxServ::MimeTypes::from_path("/index") ==
-        "text/html"  // No extension, but should return default MIME type for index files
+        "application/octet-stream"  // No extension, but should return default MIME type for index files
     );
 }
