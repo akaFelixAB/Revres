@@ -76,7 +76,12 @@ void Logger::initialize_bootstrap() {
 
     spdlog::set_pattern("[%Y-%m-%d %H:%M:%S] [BOOTSTRAP] [%^%l%$] %v");
 
+    #ifdef VELOXSERV_DEBUG
+    spdlog::set_level(spdlog::level::trace);
+    #else
     spdlog::set_level(spdlog::level::info);
+    #endif
+    spdlog::flush_on(spdlog::level::err);
 
     spdlog::info("Starting VeloxServ pre-flight sequence...");
 }
@@ -122,7 +127,11 @@ void Logger::initialize(const ServerConfig& config) {
         spdlog::async_overflow_policy::overrun_oldest
     );
 
+    #ifdef VELOXSERV_DEBUG
+    async_logger->set_level(spdlog::level::trace);
+    #else
     async_logger->set_level(spdlog::level::info);
+    #endif
     async_logger->flush_on(spdlog::level::err);
 
     spdlog::register_logger(async_logger);

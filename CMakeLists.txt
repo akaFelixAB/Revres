@@ -37,6 +37,11 @@ find_package(Catch2 3 REQUIRED)
 set(CMAKE_EXPORT_NO_PACKAGE_REGISTRY ON)
 set(CMAKE_NO_SYSTEM_FROM_IMPORTED ON) 
 
+# Build Type
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build." FORCE)
+endif()
+
 # Build Targets
 add_library(VeloxServCore STATIC
     src/ConfigLoader.cpp
@@ -47,6 +52,7 @@ add_library(VeloxServCore STATIC
     src/HttpServer.cpp
     src/HttpSession.cpp
     src/Logger.cpp
+    src/Router.cpp
 )
 
 target_link_libraries(VeloxServCore PUBLIC 
@@ -59,6 +65,13 @@ target_link_libraries(VeloxServCore PUBLIC
 )
 
 add_library(VeloxServ::Core ALIAS VeloxServCore)
+
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    target_compile_definitions(VeloxServCore PRIVATE
+        $<$<CONFIG:Debug>:VELOXSERV_DEBUG>
+        $<$<CONFIG:Debug>:SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE>
+    )
+endif()
 
 target_include_directories(VeloxServCore PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src
