@@ -101,6 +101,7 @@ add_test(
 set_tests_properties(
     SmokeTest
     PROPERTIES
+        LABELS "regular"
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         TIMEOUT 30
 )
