@@ -36,6 +36,62 @@ static inline std::size_t common_prefix(
     return i;
 }
 
+void validate_pattern(std::string_view pattern) {
+    if (pattern.empty() || pattern.front() != '/') {
+        throw std::invalid_argument(
+            "Route pattern must start with '/'"
+        );
+    }
+
+    std::size_t position = 0;
+
+    while (true) {
+        const auto marker = pattern.find_first_of(":*", position);
+
+        if (marker == std::string_view::npos) {
+            return;
+        }
+
+        // :name and *name must be at the beginning of a path segment.
+        if (marker == 0 || pattern[marker - 1] != '/') {
+            throw std::invalid_argument(
+                "Parameter marker must start a path segment"
+            );
+        }
+
+        auto end = pattern.find('/', marker);
+        if (end == std::string_view::npos) {
+            end = pattern.size();
+        }
+
+        const auto name = pattern.substr(
+            marker + 1,
+            end - marker - 1
+        );
+
+        if (name.empty()) {
+            throw std::invalid_argument(
+                "Parameter name must not be empty"
+            );
+        }
+
+        // Parameter names must occupy an entire path segment and cannot contain ':' or '*'.
+        if (name.find_first_of(":*") != std::string_view::npos) {
+            throw std::invalid_argument(
+                "Parameter must occupy an entire path segment"
+            );
+        }
+
+        if (pattern[marker] == '*' && end != pattern.size()) {
+            throw std::invalid_argument(
+                "Catch-all must be the final path segment"
+            );
+        }
+
+        position = end;
+    }
+}
+
 }
 
 namespace VeloxServ {
@@ -45,6 +101,7 @@ void Router::add_route(
     const std::string& pattern,
     const Handler& handler
 ) {
+    validate_pattern(pattern);
     insert_route(method, pattern, handler);
 }
 
@@ -58,6 +115,8 @@ std::optional<MatchResult> Router::match(
     }
 
     std::vector<std::string_view> parameter_values;
+
+    target = target.substr(0, target.find('?'));  // Ignore query string for routing
 
     // Traverse the radix tree to find a matching route
     auto search = [&](
@@ -129,7 +188,11 @@ std::optional<MatchResult> Router::match(
         }
 
         // If both static and parameter children failed, try catch-all child.
-        if (node->catch_all_ && node->catch_all_->route_) {
+        if (node->catch_all_ && 
+            node->catch_all_->route_ &&
+            !remaining.empty() && 
+            remaining != "/"
+        ) {
             // Catch-all matches the rest of the path.
             parameter_values.emplace_back(
                 target.substr(position)
