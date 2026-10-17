@@ -64,11 +64,6 @@ private:
     // Root nodes for each HTTP method.
     std::map<http::verb, std::unique_ptr<Node>> roots_;
 
-    // Check if a node is a leaf (i.e., it has no children).
-    [[nodiscard]] inline bool is_leaf(const Node& node) const {
-        return !node.static_.empty() && !node.parameter_ && !node.catch_all_;
-    }
-
     // Insert a static string into the radix tree.
     Node* insert_static(
         Node& parent,
