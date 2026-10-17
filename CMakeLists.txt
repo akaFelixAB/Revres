@@ -113,7 +113,18 @@ target_link_libraries(unit_tests PRIVATE Catch2::Catch2WithMain)
 target_link_libraries(unit_tests PRIVATE VeloxServCore)
 
 include(Catch)
-catch_discover_tests(unit_tests)
+catch_discover_tests(unit_tests
+    PROPERTIES LABELS "regular"
+    TEST_SPEC "~[benchmark]"
+)
+
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    catch_discover_tests(unit_tests
+        TEST_PREFIX "BENCHMARK "
+        PROPERTIES LABELS "benchmark"
+        TEST_SPEC "[benchmark]"
+    )
+endif()
 
 # if(WIN32)
 #     # Windows 
