@@ -16,6 +16,16 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+// Test routes:
+// /users/static
+// /username/static
+// /username/:id
+// /username/:id/profile
+// /username/:UserId/settings
+// /username
+// /username/*path
+
+
 TEST_CASE(
     "Router::match returns correct route for known patterns",
     "[router][match]"
@@ -23,21 +33,33 @@ TEST_CASE(
     using namespace VeloxServ;
     Router router;
 
+    auto handler = [](const http::request<http::string_body>& req) {
+        return http::response<http::string_body>{
+            http::status::ok, req.version()
+        };
+    };
+
+    // Add a routes
+    for (const auto& pattern : {
+        "/users/static",
+        "/username/static",
+        "/username/:id",
+        "/username/:id/profile",
+        "/username/:UserId/settings",
+        "/username",
+        "/username/*path"
+    }) {
+        router.add_route(
+            http::verb::get,
+            pattern,
+            handler
+        );
+    }
+
     SECTION(
         "Router::match returns correct route for static patterns", 
         "[router][match][static]"
     ) {
-        // Add a static route
-        router.add_route(
-            http::verb::get,
-            "/users/static",
-            [](const http::request<http::string_body>& req) {
-                return http::response<http::string_body>{
-                    http::status::ok, req.version()
-                };
-            }
-        );
-
         // Test matching static route
         REQUIRE(
             router.match(http::verb::get, "/users/static").has_value()
@@ -54,49 +76,24 @@ TEST_CASE(
             !router.match(http::verb::get, "/users/unknown").has_value()
         );
 
-        // Add another static route
-        router.add_route(
-            http::verb::get,
-            "/username/static",
-            [](const http::request<http::string_body>& req) {
-                return http::response<http::string_body>{
-                    http::status::ok, req.version()
-                };
-            }
+        // Test matching the new static routes
+        REQUIRE(
+            router.match(http::verb::get, "/username").has_value()
         );
-
-        // Test matching the new static route
+        CHECK(
+            router.match(http::verb::get, "/username")
+                .value()
+                .parameter_values_.empty()  // This is a static route, so no parameters should be captured
+        );
         REQUIRE(
             router.match(http::verb::get, "/username/static").has_value()
         );
-        CHECK(
-            router.match(http::verb::get, "/username/static")
-                .value()
-                .route_.get()
-                .parameter_names_.empty()
-        );
-        
-        // Test matching the non-existing route again
-        CHECK(
-            !router.match(http::verb::get, "/username/unknown").has_value()
-        );
     }
-
+    
     SECTION(
         "Router::match returns correct route for parameterized patterns", 
         "[router][match][parameterized]"
     ) {
-        // Add a parameter route
-        router.add_route(
-            http::verb::get,
-            "/username/:id",
-            [](const http::request<http::string_body>& req) {
-                return http::response<http::string_body>{
-                    http::status::ok, req.version()
-                };
-            }
-        );
-
         // Test matching the parameter route
         REQUIRE(
             router.match(http::verb::get, "/username/abc").has_value()
@@ -115,17 +112,6 @@ TEST_CASE(
                 .parameter_values_[0] == "123"
         );
 
-        // Add a second parameter route
-        router.add_route(
-            http::verb::get,
-            "/username/:id/profile",
-            [](const http::request<http::string_body>& req) {
-                return http::response<http::string_body>{
-                    http::status::ok, req.version()
-                };
-            }
-        );
-
         // Test matching the second parameter route
         CHECK(
             router.match(http::verb::get, "/username/456/profile")
@@ -137,17 +123,6 @@ TEST_CASE(
                 .value()
                 .route_.get()
                 .parameter_names_[0] == "id"
-        );
-
-        // Add a third parameter route with a the same name but different path
-        router.add_route(
-            http::verb::get,
-            "/username/:UserId/settings",
-            [](const http::request<http::string_body>& req) {
-                return http::response<http::string_body>{
-                    http::status::ok, req.version()
-                };
-            }
         );
 
         // Test matching the third parameter route
@@ -171,17 +146,6 @@ TEST_CASE(
         "Router::match returns correct route for catch-all patterns", 
         "[router][match][catch-all]"
     ) {
-        // Add a catch-all route
-        router.add_route(
-            http::verb::get,
-            "/username/*",
-            [](const http::request<http::string_body>& req) {
-                return http::response<http::string_body>{
-                    http::status::ok, req.version()
-                };
-            }
-        );
-
         // Test matching the catch-all route
         REQUIRE(
             router.match(http::verb::get, "/username/anything/here").has_value()
@@ -190,10 +154,50 @@ TEST_CASE(
             router.match(http::verb::get, "/username/anything/here")
                 .value()
                 .route_.get()
-                .parameter_names_[0].empty()  // Catch-all parameter has no name
+                .parameter_names_[0] == "path"  // Catch-all parameter name is "*path"
         );
         CHECK(
             router.match(http::verb::get, "/username/anything/here")
+                .value()
+                .parameter_values_[0] == "anything/here"  // Catch-all captures the rest of the path
+        );
+
+        // Test matching the catch-all route with no additional path
+        // This shouldn't match the catch-all route because the catch-all
+        // requires at least one segment after /username/
+        // Therefore, it should not match and return std::nullopt
+        REQUIRE(
+            !router.match(http::verb::get, "/username/").has_value()
+        );
+    }
+
+    SECTION(
+        "Router::match ignores query strings when matching routes",
+        "[router][match][query-string]"
+    ) {
+        // Test matching the query string with the static route
+        REQUIRE(
+            router.match(http::verb::get, "/users/static?query=1").has_value()
+        );
+        CHECK(
+            router.match(http::verb::get, "/users/static?query=1")
+                .value()
+                .route_.get()
+                .parameter_names_.empty()
+        );
+
+        // Test matching the query string with the catch-all route
+        REQUIRE(
+            router.match(http::verb::get, "/username/anything/here?query=1").has_value()
+        );
+        CHECK(
+            router.match(http::verb::get, "/username/anything/here?query=1")
+                .value()
+                .route_.get()
+                .parameter_names_[0] == "path"  // Catch-all parameter name is "*path"
+        );
+        CHECK(
+            router.match(http::verb::get, "/username/anything/here?query=1")
                 .value()
                 .parameter_values_[0] == "anything/here"  // Catch-all captures the rest of the path
         );
