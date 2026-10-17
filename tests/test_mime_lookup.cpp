@@ -20,48 +20,49 @@ TEST_CASE(
     "MimeTypes::from_path returns correct MIME type for known extensions",
     "[mime][lookup]"
 ) {
+    using namespace VeloxServ;
     CHECK(
-        VeloxServ::MimeTypes::from_path("index.html") ==
+        MimeTypes::from_path("index.html") ==
         "text/html"
     );
     CHECK(
-        VeloxServ::MimeTypes::from_path("style.css") ==
+        MimeTypes::from_path("style.css") ==
         "text/css"
     );
     CHECK(
-        VeloxServ::MimeTypes::from_path("script.js") ==
+        MimeTypes::from_path("script.js") ==
         "application/javascript"
     );
     CHECK(
-        VeloxServ::MimeTypes::from_path("image.png") ==
+        MimeTypes::from_path("image.png") ==
         "image/png"
     );
     CHECK(
-        VeloxServ::MimeTypes::from_path("/styles/style.css") ==
+        MimeTypes::from_path("/styles/style.css") ==
         "text/css"
     );
     CHECK(
-        VeloxServ::MimeTypes::from_path("/images/logo.png") ==
+        MimeTypes::from_path("/images/logo.png") ==
         "image/png"
     );
     CHECK(
-        VeloxServ::MimeTypes::from_path("/logo.png/image") ==
+        MimeTypes::from_path("/logo.png/image") ==
         "application/octet-stream"  // Not a valid use case, but should return default MIME type
     );
     CHECK(
-        VeloxServ::MimeTypes::from_path("/images/logo.png/") ==
+        MimeTypes::from_path("/images/logo.png/") ==
         "application/octet-stream"  // Not a valid use case, but should return default MIME type
     );
     CHECK(
-        VeloxServ::MimeTypes::from_path("/images/logo.PNG") ==
+        MimeTypes::from_path("/images/logo.PNG") ==
         "image/png"
     );
     CHECK(
-        VeloxServ::MimeTypes::from_path("/images/logo.PnG") ==
+        MimeTypes::from_path("/images/logo.PnG") ==
         "image/png"
     );
     CHECK(
-        VeloxServ::MimeTypes::from_path("/index") ==
+        MimeTypes::from_path("/index") ==
         "application/octet-stream"  // No extension, but should return default MIME type for index files
     );
 }
