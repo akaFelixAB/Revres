@@ -77,7 +77,7 @@ const Revres::ConfigDiagnostic* find_diagnostic(
 
 }  // namespace
 
-TEST_CASE("valid configuration produces no diagnostics", "[config][validator]") {
+TEST_CASE("Valid configuration produces no diagnostics", "[config][validator]") {
     const auto config = valid_config();
 
     const auto diagnostics =
@@ -86,8 +86,8 @@ TEST_CASE("valid configuration produces no diagnostics", "[config][validator]") 
     CHECK(diagnostics.empty());
 }
 
-TEST_CASE("port must be between 1 and 65535", "[config][validator]") {
-    SECTION("zero") {
+TEST_CASE("Port must be between 1 and 65535", "[config][validator]") {
+    SECTION("Zero is invalid", "[config][validator]") {
         auto config = valid_config();
         config.port_ = 0;
 
@@ -102,7 +102,7 @@ TEST_CASE("port must be between 1 and 65535", "[config][validator]") {
         );
     }
 
-    SECTION("negative") {
+    SECTION("Negative value is invalid", "[config][validator]") {
         auto config = valid_config();
         config.port_ = -1;
 
@@ -111,9 +111,13 @@ TEST_CASE("port must be between 1 and 65535", "[config][validator]") {
 
         REQUIRE(diagnostics.size() == 1);
         CHECK(diagnostics[0].field_ == "server.port");
+        CHECK(
+            diagnostics[0].message_ ==
+            "must be between 1 and 65535"
+        );
     }
 
-    SECTION("above maximum") {
+    SECTION("Above maximum is invalid", "[config][validator]") {
         auto config = valid_config();
         config.port_ = 65536;
 
@@ -122,9 +126,13 @@ TEST_CASE("port must be between 1 and 65535", "[config][validator]") {
 
         REQUIRE(diagnostics.size() == 1);
         CHECK(diagnostics[0].field_ == "server.port");
+        CHECK(
+            diagnostics[0].message_ ==
+            "must be between 1 and 65535"
+        );
     }
 
-    SECTION("minimum valid value") {
+    SECTION("Minimum valid value") {
         auto config = valid_config();
         config.port_ = 1;
 
@@ -134,7 +142,7 @@ TEST_CASE("port must be between 1 and 65535", "[config][validator]") {
         CHECK_FALSE(has_field(diagnostics, "server.port"));
     }
 
-    SECTION("maximum valid value") {
+    SECTION("Maximum valid value") {
         auto config = valid_config();
         config.port_ = 65535;
 
@@ -145,8 +153,8 @@ TEST_CASE("port must be between 1 and 65535", "[config][validator]") {
     }
 }
 
-TEST_CASE("timeout must be greater than zero", "[config][validator]") {
-    SECTION("zero is invalid") {
+TEST_CASE("Timeout must be greater than zero", "[config][validator]") {
+    SECTION("Zero is invalid") {
         auto config = valid_config();
         config.timeout_seconds_ = 0;
 
@@ -160,7 +168,7 @@ TEST_CASE("timeout must be greater than zero", "[config][validator]") {
         CHECK(diagnostic->message_ == "must be greater than 0");
     }
 
-    SECTION("negative value is invalid") {
+    SECTION("Negative value is invalid") {
         auto config = valid_config();
         config.timeout_seconds_ = -1;
 
@@ -170,7 +178,7 @@ TEST_CASE("timeout must be greater than zero", "[config][validator]") {
         CHECK(has_field(diagnostics, "server.timeout"));
     }
 
-    SECTION("positive value is valid") {
+    SECTION("Positive value is valid") {
         auto config = valid_config();
         config.timeout_seconds_ = 1;
 
@@ -185,7 +193,7 @@ TEST_CASE(
     "max_connections must be greater than zero",
     "[config][validator]"
 ) {
-    SECTION("zero is invalid") {
+    SECTION("Zero is invalid") {
         auto config = valid_config();
         config.max_connections_ = 0;
 
@@ -198,7 +206,7 @@ TEST_CASE(
         ));
     }
 
-    SECTION("negative value is invalid") {
+    SECTION("Negative value is invalid") {
         auto config = valid_config();
         config.max_connections_ = -1;
 
@@ -211,7 +219,7 @@ TEST_CASE(
         ));
     }
 
-    SECTION("positive value is valid") {
+    SECTION("Positive value is valid") {
         auto config = valid_config();
         config.max_connections_ = 1;
 
@@ -225,7 +233,7 @@ TEST_CASE(
     }
 }
 
-TEST_CASE("host must be valid", "[config][validator]") {
+TEST_CASE("Host must be valid", "[config][validator]") {
     SECTION("empty host") {
         auto config = valid_config();
         config.host_.clear();
@@ -240,7 +248,7 @@ TEST_CASE("host must be valid", "[config][validator]") {
         CHECK(diagnostic->message_ == "must not be empty");
     }
 
-    SECTION("invalid IP address") {
+    SECTION("Invalid IP address") {
         auto config = valid_config();
         config.host_ = "not-an-ip-address";
 
@@ -250,7 +258,7 @@ TEST_CASE("host must be valid", "[config][validator]") {
         CHECK(has_field(diagnostics, "server.host"));
     }
 
-    SECTION("valid IPv4 address") {
+    SECTION("Valid IPv4 address") {
         auto config = valid_config();
         config.host_ = "192.168.1.10";
 
@@ -260,7 +268,7 @@ TEST_CASE("host must be valid", "[config][validator]") {
         CHECK_FALSE(has_field(diagnostics, "server.host"));
     }
 
-    SECTION("valid IPv6 address") {
+    SECTION("Valid IPv6 address") {
         auto config = valid_config();
         config.host_ = "::1";
 
@@ -271,7 +279,7 @@ TEST_CASE("host must be valid", "[config][validator]") {
     }
 }
 
-TEST_CASE("route path must start with slash", "[config][routes]") {
+TEST_CASE("Route path must start with slash", "[config][routes]") {
     auto config = valid_config();
 
     REQUIRE(config.routes_.size() == 1);
@@ -288,7 +296,7 @@ TEST_CASE("route path must start with slash", "[config][routes]") {
     CHECK(diagnostic->message_ == "must start with '/'");
 }
 
-TEST_CASE("route path must not be empty", "[config][routes]") {
+TEST_CASE("Route path must not be empty", "[config][routes]") {
     auto config = valid_config();
     config.routes_[0].path_.clear();
 
@@ -302,7 +310,7 @@ TEST_CASE("route path must not be empty", "[config][routes]") {
     CHECK(diagnostic->message_ == "must not be empty");
 }
 
-TEST_CASE("route diagnostic contains route index", "[config][routes]") {
+TEST_CASE("Route diagnostic contains route index", "[config][routes]") {
     auto config = valid_config();
 
     Revres::RouteConfig second_route;
@@ -319,7 +327,7 @@ TEST_CASE("route diagnostic contains route index", "[config][routes]") {
     CHECK_FALSE(has_field(diagnostics, "routes[0].path"));
 }
 
-TEST_CASE("proxy route is rejected as unimplemented", "[config][routes]") {
+TEST_CASE("Proxy route is rejected as unimplemented", "[config][routes]") {
     auto config = valid_config();
 
     config.routes_[0].type_ = Revres::RouteType::Proxy;
@@ -338,7 +346,7 @@ TEST_CASE("proxy route is rejected as unimplemented", "[config][routes]") {
     );
 }
 
-TEST_CASE("static route requires root", "[config][routes]") {
+TEST_CASE("Static route requires root", "[config][routes]") {
     auto config = valid_config();
     config.routes_[0].root_.clear();
 
@@ -355,7 +363,7 @@ TEST_CASE("static route requires root", "[config][routes]") {
     );
 }
 
-TEST_CASE("static route root must exist", "[config][routes]") {
+TEST_CASE("Static route root must exist", "[config][routes]") {
     auto config = valid_config();
     config.routes_[0].root_ =
         "/this/path/should/not/exist/revres-test";
@@ -367,7 +375,7 @@ TEST_CASE("static route root must exist", "[config][routes]") {
 }
 
 TEST_CASE(
-    "validator reports all invalid fields",
+    "Validator reports all invalid fields",
     "[config][validator]"
 ) {
     auto config = valid_config();
