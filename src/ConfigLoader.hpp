@@ -17,7 +17,7 @@
 #include <toml++/toml.hpp>
 #include <unordered_map>
 
-namespace VeloxServ {
+namespace Revres {
 
 // Overload operator"" _MB
 constexpr size_t operator""_MB(unsigned long long mb) {
@@ -46,7 +46,7 @@ struct LoggingConfig {
 
 // Server configuration
 struct ServerConfig {
-    std::string name_ = "VeloxServ";  // Server name
+    std::string name_ = "Revres";  // Server name
     std::string host_ = "127.0.0.1";
     unsigned int port_ = 8080;
     int timeout_seconds_ = 30;
@@ -66,4 +66,4 @@ public:
     [[nodiscard]] std::string_view route_type_to_string(RouteType type) const;
 };  // class ConfigLoader
 
-}  // namespace VeloxServ
+}  // namespace Revres

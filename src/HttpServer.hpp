@@ -23,7 +23,7 @@
 
 #include <spdlog/spdlog.h>
 
-namespace VeloxServ {
+namespace Revres {
 
 namespace beast = boost::beast;
 namespace http = beast::http;
@@ -134,4 +134,4 @@ public:
     }
 };  // class HttpServ
 
-}  // namespace VeloxServ
+}  // namespace Revres

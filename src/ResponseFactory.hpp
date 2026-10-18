@@ -18,7 +18,7 @@
 
 #include <string_view>
 
-namespace VeloxServ {
+namespace Revres {
 
 namespace http = boost::beast::http;
 using response = http::response<http::string_body>;
@@ -57,4 +57,4 @@ public:
     );
 };
 
-}  // namespace VeloxServ
+}  // namespace Revres

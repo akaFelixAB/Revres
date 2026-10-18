@@ -17,7 +17,7 @@
 
 #include <spdlog/spdlog.h>
 
-namespace VeloxServ {
+namespace Revres {
 
 std::optional<RouteType> ConfigLoader::route_type_from_string(std::string_view value) const {
     if (value == "static") {
@@ -50,7 +50,7 @@ ServerConfig ConfigLoader::load_file(const std::string& file_path) const {
 
         // Parse the server configuration
         if (auto server_node = tbl["server"].as_table()) {
-            config.name_ = server_node->get("name")->value_or("VeloxServ");
+            config.name_ = server_node->get("name")->value_or("Revres");
             config.host_ = server_node->get("host")->value_or("127.0.0.1");
             config.port_ = static_cast<unsigned int>(server_node->get("port")->value_or(8080));
             config.timeout_seconds_ = static_cast<int>(server_node->get("timeout_seconds")->value_or(30));
@@ -108,4 +108,4 @@ ServerConfig ConfigLoader::load_file(const std::string& file_path) const {
     }
 }
 
-}  // namespace VeloxServ
+}  // namespace Revres

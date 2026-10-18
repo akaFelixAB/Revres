@@ -13,7 +13,7 @@
 # limitations under the License.
 
 cmake_minimum_required(VERSION 3.20.0)
-project(VeloxServ VERSION 0.1.0 LANGUAGES C CXX)
+project(Revres VERSION 0.1.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -43,7 +43,7 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 # Build Targets
-add_library(VeloxServCore STATIC
+add_library(RevresCore STATIC
     src/ConfigLoader.cpp
     src/ConfigValidator.cpp
     src/ConfigException.cpp
@@ -55,7 +55,7 @@ add_library(VeloxServCore STATIC
     src/Router.cpp
 )
 
-target_link_libraries(VeloxServCore PUBLIC 
+target_link_libraries(RevresCore PUBLIC 
     Boost::asio
     Boost::beast
     Boost::url
@@ -64,23 +64,23 @@ target_link_libraries(VeloxServCore PUBLIC
     spdlog::spdlog
 )
 
-add_library(VeloxServ::Core ALIAS VeloxServCore)
+add_library(Revres::Core ALIAS RevresCore)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    target_compile_definitions(VeloxServCore PRIVATE
-        $<$<CONFIG:Debug>:VELOXSERV_DEBUG>
+    target_compile_definitions(RevresCore PRIVATE
+        $<$<CONFIG:Debug>:REVRES_DEBUG>
         $<$<CONFIG:Debug>:SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE>
     )
 endif()
 
-target_include_directories(VeloxServCore PUBLIC
+target_include_directories(RevresCore PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
-add_executable(VeloxServ src/main.cpp)
+add_executable(revres src/main.cpp)
 
-target_link_libraries(VeloxServ PRIVATE
-    VeloxServ::Core
+target_link_libraries(revres PRIVATE
+    Revres::Core
 )
 
 # Testing
@@ -95,7 +95,7 @@ add_test(
     COMMAND
         ${Python3_EXECUTABLE}
         ${CMAKE_CURRENT_SOURCE_DIR}/tests/smoke_test.py
-        $<TARGET_FILE:VeloxServ>
+        $<TARGET_FILE:revres>
         ${CMAKE_CURRENT_SOURCE_DIR}
 )
 set_tests_properties(
@@ -111,7 +111,7 @@ file(GLOB_RECURSE TEST_SOURCES CONFIGURE_DEPENDS "tests/*.cpp")
 add_executable(unit_tests ${TEST_SOURCES})
 
 target_link_libraries(unit_tests PRIVATE Catch2::Catch2WithMain)
-target_link_libraries(unit_tests PRIVATE VeloxServCore)
+target_link_libraries(unit_tests PRIVATE Revres::Core)
 
 include(Catch)
 catch_discover_tests(unit_tests
@@ -129,12 +129,12 @@ endif()
 
 # if(WIN32)
 #     # Windows 
-#     install(TARGETS VeloxServ DESTINATION bin)
+#     install(TARGETS Revres DESTINATION bin)
 #     install(FILES default.toml DESTINATION bin)
 # else()
 #     # POSIX
-#     install(TARGETS VeloxServ DESTINATION bin)
-#     install(FILES default.toml DESTINATION /etc/VeloxServ)
+#     install(TARGETS Revres DESTINATION bin)
+#     install(FILES default.toml DESTINATION /etc/Revres)
 # endif()
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})

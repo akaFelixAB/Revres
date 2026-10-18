@@ -21,7 +21,7 @@
 
 #include <filesystem>
 
-namespace VeloxServ {
+namespace Revres {
 
 http::message_generator HttpServer::handle_static_request(
     const http::request<http::string_body>& req,
@@ -156,4 +156,4 @@ void HttpServer::Impl::accept_request() {
     );
 }
 
-}  // namespace VeloxServ
+}  // namespace Revres

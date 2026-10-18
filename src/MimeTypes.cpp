@@ -91,7 +91,7 @@ static const MimeTypesMap MIME_TYPES = {
 
 }  // namespace
 
-namespace VeloxServ {
+namespace Revres {
 
 std::string_view MimeTypes::from_path(std::string_view path) noexcept {
     // Get the MIME type based on the file extension
@@ -114,4 +114,4 @@ std::string_view MimeTypes::from_path(std::string_view path) noexcept {
     return DEFAULT_MIME_TYPE;
 }
 
-}  // namespace VeloxServ
+}  // namespace Revres

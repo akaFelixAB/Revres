@@ -14,7 +14,7 @@
 
 #include "ResponseFactory.hpp"
 
-namespace VeloxServ {
+namespace Revres {
 
 response ResponseFactory::error(
     http::status status,
@@ -62,4 +62,4 @@ response ResponseFactory::internal_server_error(
     return error(http::status::internal_server_error, version, keep_alive, message);
 }
 
-}  // namespace VeloxServ
+}  // namespace Revres

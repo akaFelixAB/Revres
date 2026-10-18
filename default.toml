@@ -1,5 +1,5 @@
 [server]
-name = "VeloxServ"
+name = "Revres"
 host = "127.0.0.1"
 port = 8080
 timeout_seconds = 30
