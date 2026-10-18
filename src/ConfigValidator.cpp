@@ -18,7 +18,7 @@
 
 #include <filesystem>
 
-namespace VeloxServ {
+namespace Revres {
 
 namespace {
 
@@ -156,4 +156,4 @@ std::vector<ConfigDiagnostic> ConfigValidator::validate(
     return errors;
 }
 
-}  // namespace VeloxServ
+}  // namespace Revres

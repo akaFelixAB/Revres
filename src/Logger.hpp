@@ -22,7 +22,7 @@ namespace spdlog {
 class logger;  // NOLINT
 }
 
-namespace VeloxServ {
+namespace Revres {
 
 class Logger final {
 public:
@@ -48,4 +48,4 @@ private:
     bool initialized_ = false;
 };
 
-}  // namespace VeloxServ
+}  // namespace Revres

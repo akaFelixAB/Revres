@@ -19,7 +19,7 @@
 #include <vector>
 #include "ConfigDiagnostic.hpp"
 
-namespace VeloxServ {
+namespace Revres {
 
 class ConfigException final : public std::runtime_error {
 public:
@@ -37,4 +37,4 @@ private:
     std::vector<ConfigDiagnostic> diagnostics_;
 };
 
-}  // namespace VeloxServ
+}  // namespace Revres

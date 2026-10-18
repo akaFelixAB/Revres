@@ -20,7 +20,7 @@ TEST_CASE(
     "MimeTypes::from_path returns correct MIME type for known extensions",
     "[mime][lookup]"
 ) {
-    using namespace VeloxServ;
+    using namespace Revres;
     CHECK(
         MimeTypes::from_path("index.html") ==
         "text/html"

@@ -94,7 +94,7 @@ void validate_pattern(std::string_view pattern) {
 
 }
 
-namespace VeloxServ {
+namespace Revres {
 
 void Router::add_route(
     http::verb method,
@@ -375,4 +375,4 @@ void Router::insert_route(
     };
 }
 
-}  // namespace VeloxServ
+}  // namespace Revres

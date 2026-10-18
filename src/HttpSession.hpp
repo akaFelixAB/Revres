@@ -21,7 +21,7 @@
 
 #include <memory>
 
-namespace VeloxServ {
+namespace Revres {
 
 namespace beast = boost::beast;
 namespace http = beast::http;
@@ -33,10 +33,10 @@ class HttpSession : public std::enable_shared_from_this<HttpSession> {
     beast::tcp_stream socket_;                             // Socket for the session
     http::request<http::string_body> request_;             // Request received from the client
     beast::flat_buffer buffer_;                            // Buffer for reading
-    std::shared_ptr<const VeloxServ::RouteTable> routes_;  // Map of routes to handlers
+    std::shared_ptr<const Revres::RouteTable> routes_;  // Map of routes to handlers
 
 public:
-    HttpSession(tcp::socket socket, std::shared_ptr<const VeloxServ::RouteTable> routes) :
+    HttpSession(tcp::socket socket, std::shared_ptr<const Revres::RouteTable> routes) :
         socket_(std::move(socket)), routes_(std::move(routes)) {}
 
     inline void start() {
@@ -56,4 +56,4 @@ private:
     void process_request();
 };  // class HttpSession
 
-}  // namespace VeloxServ
+}  // namespace Revres

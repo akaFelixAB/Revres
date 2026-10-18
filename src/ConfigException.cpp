@@ -14,7 +14,7 @@
 
 #include "ConfigException.hpp"
 
-namespace VeloxServ {
+namespace Revres {
 
 // Customized configuration validation errors
 ConfigException::ConfigException(std::vector<ConfigDiagnostic> diagnostics)
@@ -33,4 +33,4 @@ std::string ConfigException::format_message(
     return message;
 }
 
-}  // namespace VeloxServ
+}  // namespace Revres

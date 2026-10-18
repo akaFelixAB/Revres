@@ -30,7 +30,7 @@ TEST_CASE(
     "Router::match returns correct route for known patterns",
     "[router][match]"
 ) {
-    using namespace VeloxServ;
+    using namespace Revres;
     Router router;
 
     auto handler = [](const http::request<http::string_body>& req) {

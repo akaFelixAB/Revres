@@ -19,7 +19,7 @@
 
 #include <vector>
 
-namespace VeloxServ {
+namespace Revres {
 
 class ConfigValidator {
 public:
@@ -28,4 +28,4 @@ public:
     );
 };
 
-}  // namespace VeloxServ
+}  // namespace Revres

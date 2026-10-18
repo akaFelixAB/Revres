@@ -149,7 +149,7 @@ def main() -> int:
         if status_code == 200:
             fail("path traversal request returned HTTP 200")
 
-        if b"[server]" in body or b"VeloxServ" in body:
+        if b"[server]" in body or b"Revres" in body:
             fail("path traversal request returned content from default.toml")
 
         if status_code not in (400, 403, 404):

@@ -17,11 +17,11 @@
 #include <cstddef>
 #include <string>
 
-namespace VeloxServ {
+namespace Revres {
 
 struct ConfigDiagnostic {
     std::string field_;
     std::string message_;
 };
 
-}  // namespace VeloxServ
+}  // namespace Revres

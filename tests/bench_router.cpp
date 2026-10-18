@@ -18,7 +18,7 @@
 #include <catch2/benchmark/catch_benchmark.hpp>
 
 TEST_CASE("Router::match", "[router][match][benchmark]") {
-    using namespace VeloxServ;
+    using namespace Revres;
 
     // Handler that returns a simple HTTP 200 OK response
     Handler handler =

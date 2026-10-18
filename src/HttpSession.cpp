@@ -20,15 +20,15 @@
 
 #include <spdlog/spdlog.h>
 
-namespace VeloxServ {
+namespace Revres {
 
-void VeloxServ::HttpSession::on_read(boost::system::error_code ec, std::size_t bytes_transferred) {
+void Revres::HttpSession::on_read(boost::system::error_code ec, std::size_t bytes_transferred) {
     if (!ec) {
         process_request();
     }
 }
 
-void VeloxServ::HttpSession::read_request() {
+void Revres::HttpSession::read_request() {
     auto self = shared_from_this();
     http::async_read(
         socket_,
@@ -38,7 +38,7 @@ void VeloxServ::HttpSession::read_request() {
     );
 }
 
-void VeloxServ::HttpSession::process_request() {
+void Revres::HttpSession::process_request() {
     socket_.expires_after(std::chrono::seconds(30));
 
     // Save the keep-alive status and the request path for routing
@@ -105,4 +105,4 @@ void VeloxServ::HttpSession::process_request() {
     );
 }
 
-}  // namespace VeloxServ
+}  // namespace Revres

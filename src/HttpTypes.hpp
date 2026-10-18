@@ -21,7 +21,7 @@
 #include <memory>
 #include <string>
 
-namespace VeloxServ {
+namespace Revres {
 
 // Forward declaration of HTTP types from Boost.Beast
 namespace http = boost::beast::http;

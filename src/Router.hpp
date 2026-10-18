@@ -16,7 +16,7 @@
 
 #include "HttpTypes.hpp"
 
-namespace VeloxServ {
+namespace Revres {
 
 class Router final {
 public:
@@ -83,4 +83,4 @@ private:
     );
 };
 
-}  // namespace VeloxServ
+}  // namespace Revres

@@ -23,8 +23,8 @@
 
 namespace {
 
-VeloxServ::ServerConfig valid_config() {
-    VeloxServ::ServerConfig config;
+Revres::ServerConfig valid_config() {
+    Revres::ServerConfig config;
 
     config.name_ = "TestServer";
     config.host_ = "127.0.0.1";
@@ -32,9 +32,9 @@ VeloxServ::ServerConfig valid_config() {
     config.timeout_seconds_ = 30;
     config.max_connections_ = 100;
 
-    VeloxServ::RouteConfig route;
+    Revres::RouteConfig route;
     route.path_ = "/";
-    route.type_ = VeloxServ::RouteType::Static;
+    route.type_ = Revres::RouteType::Static;
     route.root_ = ".";
     route.index_ = "index.html";
 
@@ -44,26 +44,26 @@ VeloxServ::ServerConfig valid_config() {
 }
 
 bool has_field(
-    const std::vector<VeloxServ::ConfigDiagnostic>& diagnostics,
+    const std::vector<Revres::ConfigDiagnostic>& diagnostics,
     std::string_view field
 ) {
     return std::any_of(
         diagnostics.begin(),
         diagnostics.end(),
-        [field](const VeloxServ::ConfigDiagnostic& diagnostic) {
+        [field](const Revres::ConfigDiagnostic& diagnostic) {
             return diagnostic.field_ == field;
         }
     );
 }
 
-const VeloxServ::ConfigDiagnostic* find_diagnostic(
-    const std::vector<VeloxServ::ConfigDiagnostic>& diagnostics,
+const Revres::ConfigDiagnostic* find_diagnostic(
+    const std::vector<Revres::ConfigDiagnostic>& diagnostics,
     std::string_view field
 ) {
     const auto it = std::find_if(
         diagnostics.begin(),
         diagnostics.end(),
-        [field](const VeloxServ::ConfigDiagnostic& diagnostic) {
+        [field](const Revres::ConfigDiagnostic& diagnostic) {
             return diagnostic.field_ == field;
         }
     );
@@ -81,7 +81,7 @@ TEST_CASE("valid configuration produces no diagnostics", "[config][validator]") 
     const auto config = valid_config();
 
     const auto diagnostics =
-        VeloxServ::ConfigValidator::validate(config);
+        Revres::ConfigValidator::validate(config);
 
     CHECK(diagnostics.empty());
 }
@@ -92,7 +92,7 @@ TEST_CASE("port must be between 1 and 65535", "[config][validator]") {
         config.port_ = 0;
 
         const auto diagnostics =
-            VeloxServ::ConfigValidator::validate(config);
+            Revres::ConfigValidator::validate(config);
 
         REQUIRE(diagnostics.size() == 1);
         CHECK(diagnostics[0].field_ == "server.port");
@@ -107,7 +107,7 @@ TEST_CASE("port must be between 1 and 65535", "[config][validator]") {
         config.port_ = -1;
 
         const auto diagnostics =
-            VeloxServ::ConfigValidator::validate(config);
+            Revres::ConfigValidator::validate(config);
 
         REQUIRE(diagnostics.size() == 1);
         CHECK(diagnostics[0].field_ == "server.port");
@@ -118,7 +118,7 @@ TEST_CASE("port must be between 1 and 65535", "[config][validator]") {
         config.port_ = 65536;
 
         const auto diagnostics =
-            VeloxServ::ConfigValidator::validate(config);
+            Revres::ConfigValidator::validate(config);
 
         REQUIRE(diagnostics.size() == 1);
         CHECK(diagnostics[0].field_ == "server.port");
@@ -129,7 +129,7 @@ TEST_CASE("port must be between 1 and 65535", "[config][validator]") {
         config.port_ = 1;
 
         const auto diagnostics =
-            VeloxServ::ConfigValidator::validate(config);
+            Revres::ConfigValidator::validate(config);
 
         CHECK_FALSE(has_field(diagnostics, "server.port"));
     }
@@ -139,7 +139,7 @@ TEST_CASE("port must be between 1 and 65535", "[config][validator]") {
         config.port_ = 65535;
 
         const auto diagnostics =
-            VeloxServ::ConfigValidator::validate(config);
+            Revres::ConfigValidator::validate(config);
 
         CHECK_FALSE(has_field(diagnostics, "server.port"));
     }
@@ -151,7 +151,7 @@ TEST_CASE("timeout must be greater than zero", "[config][validator]") {
         config.timeout_seconds_ = 0;
 
         const auto diagnostics =
-            VeloxServ::ConfigValidator::validate(config);
+            Revres::ConfigValidator::validate(config);
 
         const auto* diagnostic =
             find_diagnostic(diagnostics, "server.timeout");
@@ -165,7 +165,7 @@ TEST_CASE("timeout must be greater than zero", "[config][validator]") {
         config.timeout_seconds_ = -1;
 
         const auto diagnostics =
-            VeloxServ::ConfigValidator::validate(config);
+            Revres::ConfigValidator::validate(config);
 
         CHECK(has_field(diagnostics, "server.timeout"));
     }
@@ -175,7 +175,7 @@ TEST_CASE("timeout must be greater than zero", "[config][validator]") {
         config.timeout_seconds_ = 1;
 
         const auto diagnostics =
-            VeloxServ::ConfigValidator::validate(config);
+            Revres::ConfigValidator::validate(config);
 
         CHECK_FALSE(has_field(diagnostics, "server.timeout"));
     }
@@ -190,7 +190,7 @@ TEST_CASE(
         config.max_connections_ = 0;
 
         const auto diagnostics =
-            VeloxServ::ConfigValidator::validate(config);
+            Revres::ConfigValidator::validate(config);
 
         CHECK(has_field(
             diagnostics,
@@ -203,7 +203,7 @@ TEST_CASE(
         config.max_connections_ = -1;
 
         const auto diagnostics =
-            VeloxServ::ConfigValidator::validate(config);
+            Revres::ConfigValidator::validate(config);
 
         CHECK(has_field(
             diagnostics,
@@ -216,7 +216,7 @@ TEST_CASE(
         config.max_connections_ = 1;
 
         const auto diagnostics =
-            VeloxServ::ConfigValidator::validate(config);
+            Revres::ConfigValidator::validate(config);
 
         CHECK_FALSE(has_field(
             diagnostics,
@@ -231,7 +231,7 @@ TEST_CASE("host must be valid", "[config][validator]") {
         config.host_.clear();
 
         const auto diagnostics =
-            VeloxServ::ConfigValidator::validate(config);
+            Revres::ConfigValidator::validate(config);
 
         const auto* diagnostic =
             find_diagnostic(diagnostics, "server.host");
@@ -245,7 +245,7 @@ TEST_CASE("host must be valid", "[config][validator]") {
         config.host_ = "not-an-ip-address";
 
         const auto diagnostics =
-            VeloxServ::ConfigValidator::validate(config);
+            Revres::ConfigValidator::validate(config);
 
         CHECK(has_field(diagnostics, "server.host"));
     }
@@ -255,7 +255,7 @@ TEST_CASE("host must be valid", "[config][validator]") {
         config.host_ = "192.168.1.10";
 
         const auto diagnostics =
-            VeloxServ::ConfigValidator::validate(config);
+            Revres::ConfigValidator::validate(config);
 
         CHECK_FALSE(has_field(diagnostics, "server.host"));
     }
@@ -265,7 +265,7 @@ TEST_CASE("host must be valid", "[config][validator]") {
         config.host_ = "::1";
 
         const auto diagnostics =
-            VeloxServ::ConfigValidator::validate(config);
+            Revres::ConfigValidator::validate(config);
 
         CHECK_FALSE(has_field(diagnostics, "server.host"));
     }
@@ -279,7 +279,7 @@ TEST_CASE("route path must start with slash", "[config][routes]") {
     config.routes_[0].path_ = "api";
 
     const auto diagnostics =
-        VeloxServ::ConfigValidator::validate(config);
+        Revres::ConfigValidator::validate(config);
 
     const auto* diagnostic =
         find_diagnostic(diagnostics, "routes[0].path");
@@ -293,7 +293,7 @@ TEST_CASE("route path must not be empty", "[config][routes]") {
     config.routes_[0].path_.clear();
 
     const auto diagnostics =
-        VeloxServ::ConfigValidator::validate(config);
+        Revres::ConfigValidator::validate(config);
 
     const auto* diagnostic =
         find_diagnostic(diagnostics, "routes[0].path");
@@ -305,15 +305,15 @@ TEST_CASE("route path must not be empty", "[config][routes]") {
 TEST_CASE("route diagnostic contains route index", "[config][routes]") {
     auto config = valid_config();
 
-    VeloxServ::RouteConfig second_route;
+    Revres::RouteConfig second_route;
     second_route.path_ = "api";
-    second_route.type_ = VeloxServ::RouteType::Static;
+    second_route.type_ = Revres::RouteType::Static;
     second_route.root_ = ".";
 
     config.routes_.push_back(std::move(second_route));
 
     const auto diagnostics =
-        VeloxServ::ConfigValidator::validate(config);
+        Revres::ConfigValidator::validate(config);
 
     CHECK(has_field(diagnostics, "routes[1].path"));
     CHECK_FALSE(has_field(diagnostics, "routes[0].path"));
@@ -322,11 +322,11 @@ TEST_CASE("route diagnostic contains route index", "[config][routes]") {
 TEST_CASE("proxy route is rejected as unimplemented", "[config][routes]") {
     auto config = valid_config();
 
-    config.routes_[0].type_ = VeloxServ::RouteType::Proxy;
+    config.routes_[0].type_ = Revres::RouteType::Proxy;
     config.routes_[0].upstream_ = "http://127.0.0.1:3000";
 
     const auto diagnostics =
-        VeloxServ::ConfigValidator::validate(config);
+        Revres::ConfigValidator::validate(config);
 
     const auto* diagnostic =
         find_diagnostic(diagnostics, "routes[0].type");
@@ -343,7 +343,7 @@ TEST_CASE("static route requires root", "[config][routes]") {
     config.routes_[0].root_.clear();
 
     const auto diagnostics =
-        VeloxServ::ConfigValidator::validate(config);
+        Revres::ConfigValidator::validate(config);
 
     const auto* diagnostic =
         find_diagnostic(diagnostics, "routes[0].root");
@@ -358,10 +358,10 @@ TEST_CASE("static route requires root", "[config][routes]") {
 TEST_CASE("static route root must exist", "[config][routes]") {
     auto config = valid_config();
     config.routes_[0].root_ =
-        "/this/path/should/not/exist/veloxserv-test";
+        "/this/path/should/not/exist/revres-test";
 
     const auto diagnostics =
-        VeloxServ::ConfigValidator::validate(config);
+        Revres::ConfigValidator::validate(config);
 
     CHECK(has_field(diagnostics, "routes[0].root"));
 }
@@ -377,11 +377,11 @@ TEST_CASE(
     config.timeout_seconds_ = 0;
     config.max_connections_ = -1;
     config.routes_[0].path_ = "api";
-    config.routes_[0].type_ = VeloxServ::RouteType::Proxy;
+    config.routes_[0].type_ = Revres::RouteType::Proxy;
     config.routes_[0].upstream_ = "invalid-url";
 
     const auto diagnostics =
-        VeloxServ::ConfigValidator::validate(config);
+        Revres::ConfigValidator::validate(config);
 
     CHECK(has_field(diagnostics, "server.host"));
     CHECK(has_field(diagnostics, "server.port"));

@@ -40,12 +40,12 @@ int main(int argc, char* argv[]) {
     }
 
     // Logger instance for logging throughout the application
-    VeloxServ::Logger logger;
+    Revres::Logger logger;
     // Initialize bootstrap logging for early startup messages
     logger.initialize_bootstrap();
 
     try {
-        VeloxServ::ConfigLoader config_loader;
+        Revres::ConfigLoader config_loader;
         auto cfg = config_loader.load_file(config_path);
 
         // Initialize logging
@@ -54,7 +54,7 @@ int main(int argc, char* argv[]) {
         net::io_context ioc;
 
         // Create the HTTP server
-        VeloxServ::HttpServer server(ioc, cfg);
+        Revres::HttpServer server(ioc, cfg);
 
         server.run();
 

@@ -17,7 +17,7 @@
 #include <filesystem>
 #include <string_view>
 
-namespace VeloxServ {
+namespace Revres {
 
 class MimeTypes final {
 public:
@@ -29,4 +29,4 @@ public:
     ~MimeTypes() = delete;
 };
 
-}  // namespace VeloxServ
+}  // namespace Revres
