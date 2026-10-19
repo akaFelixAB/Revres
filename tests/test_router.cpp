@@ -202,4 +202,33 @@ TEST_CASE(
                 .parameter_values_[0] == "anything/here"  // Catch-all captures the rest of the path
         );
     }
+};
+
+TEST_CASE("Router::add_route throws for invalid patterns", "[router][pattern-normalization]") {
+    using namespace Revres;
+    Router router;
+
+    auto handler = [](const http::request<http::string_body>& req) {
+        return http::response<http::string_body>{
+            http::status::ok, req.version()
+        };
+    };
+
+    // Test invalid patterns
+    for (const auto& pattern : {
+        "",  // Empty pattern
+        "no-leading-slash",             // No leading slash
+        "/invalid/segment/..",          // Dot segment
+        "/invalid/segment/.",           // Dot segment
+        "/invalid/:param/..",           // Dot segment with parameter
+        "/invalid/:param/.",            // Dot segment with parameter
+        "/invalid/*catch/all",          // Catch-all not last
+        "/invalid/*catch/*all",         // Multiple catch-all segments
+        "/invalid/:param/*catch/all"    // Catch-all not last with parameter
+    }) {
+        CHECK_THROWS_AS(
+            router.add_route(http::verb::get, pattern, handler),
+            std::invalid_argument
+        );
+    }
 }
