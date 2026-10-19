@@ -16,13 +16,13 @@
 
 namespace Revres {
 
-response ResponseFactory::error(
+HttpResponse ResponseFactory::error(
     http::status status,
     unsigned version,
     bool keep_alive,
     std::string_view message
 ) {
-    response res{status, version};
+    HttpResponse res{status, version};
     res.set(http::field::content_type, "text/plain; charset=utf-8");
     res.keep_alive(keep_alive);
     res.body() = message;
@@ -30,7 +30,7 @@ response ResponseFactory::error(
     return res;
 }
 
-response ResponseFactory::bad_request(
+HttpResponse ResponseFactory::bad_request(
     unsigned version,
     bool keep_alive,
     std::string_view message
@@ -38,7 +38,7 @@ response ResponseFactory::bad_request(
     return error(http::status::bad_request, version, keep_alive, message);
 }
 
-response ResponseFactory::forbidden(
+HttpResponse ResponseFactory::forbidden(
     unsigned version,
     bool keep_alive,
     std::string_view message
@@ -46,7 +46,7 @@ response ResponseFactory::forbidden(
     return error(http::status::forbidden, version, keep_alive, message);
 }
 
-response ResponseFactory::not_found(
+HttpResponse ResponseFactory::not_found(
     unsigned version,
     bool keep_alive,
     std::string_view message
@@ -54,7 +54,7 @@ response ResponseFactory::not_found(
     return error(http::status::not_found, version, keep_alive, message);
 }
 
-response ResponseFactory::internal_server_error(
+HttpResponse ResponseFactory::internal_server_error(
     unsigned version,
     bool keep_alive,
     std::string_view message

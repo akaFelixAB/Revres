@@ -53,6 +53,7 @@ add_library(RevresCore STATIC
     src/HttpSession.cpp
     src/Logger.cpp
     src/Router.cpp
+    src/HttpRequest.cpp
 )
 
 target_link_libraries(RevresCore PUBLIC 
