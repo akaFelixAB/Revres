@@ -16,6 +16,19 @@
 
 namespace Revres {
 
+HttpResponse ResponseFactory::ok(
+    unsigned version,
+    bool keep_alive,
+    std::string_view message
+) {
+    HttpResponse res{http::status::ok, version};
+    res.set(http::field::content_type, "text/plain; charset=utf-8");
+    res.keep_alive(keep_alive);
+    res.body() = message;
+    res.prepare_payload();
+    return res;
+}
+
 HttpResponse ResponseFactory::error(
     http::status status,
     unsigned version,
@@ -52,6 +65,21 @@ HttpResponse ResponseFactory::not_found(
     std::string_view message
 ) {
     return error(http::status::not_found, version, keep_alive, message);
+}
+
+HttpResponse ResponseFactory::method_not_allowed(
+    unsigned version,
+    bool keep_alive,
+    std::string_view allow_methods,
+    std::string_view message
+) {
+    HttpResponse res{http::status::method_not_allowed, version};
+    res.set(http::field::content_type, "text/plain; charset=utf-8");
+    res.keep_alive(keep_alive);
+    res.body() = message;
+    res.prepare_payload();
+    res.set(http::field::allow, allow_methods);
+    return res;
 }
 
 HttpResponse ResponseFactory::internal_server_error(

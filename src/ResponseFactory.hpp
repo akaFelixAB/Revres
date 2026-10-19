@@ -26,6 +26,12 @@ namespace http = boost::beast::http;
 
 class ResponseFactory final {
 public:
+    [[nodiscard]] static HttpResponse ok(
+        unsigned version,
+        bool keep_alive = false,
+        std::string_view message = "OK"
+    );
+
     [[nodiscard]] static HttpResponse error(
         http::status status,
         unsigned version,
@@ -49,6 +55,13 @@ public:
         unsigned version,
         bool keep_alive = false,
         std::string_view message = "404 Not Found"
+    );
+
+    [[nodiscard]] static HttpResponse method_not_allowed(
+        unsigned version,
+        bool keep_alive = false,
+        std::string_view allow_methods = "GET, HEAD",
+        std::string_view message = "405 Method Not Allowed"
     );
 
     [[nodiscard]] static HttpResponse internal_server_error(
