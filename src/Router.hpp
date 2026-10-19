@@ -78,7 +78,8 @@ private:
 
     void insert_route(
         http::verb method,
-        const std::string& pattern,
+        std::string_view pattern,
+        std::vector<std::string> parameter_names,
         const Handler& handler
     );
 };
