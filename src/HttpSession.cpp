@@ -15,6 +15,8 @@
 #include "HttpSession.hpp"
 
 #include "ResponseFactory.hpp"
+#include "StaticFileHandler.hpp"
+#include "HttpRequest.hpp"
 
 #include <boost/url.hpp>
 
@@ -45,16 +47,11 @@ void Revres::HttpSession::process_request() {
     bool keep_alive = request_.keep_alive();
 
     // Parse the request target (e.g., "/path/to/file?query=1")
-    std::string_view req_target = request_.target();
-    auto parsed_url = boost::urls::parse_origin_form(req_target);
+    HttpRequest http_request(std::move(request_));
 
-    std::string path;
-    if (parsed_url.has_value()) {
-        spdlog::debug("Parsed URL: {}", parsed_url->buffer());
-        path.assign(parsed_url->path().data(), parsed_url->path().size());
-    } else {
-        path.assign(req_target.data(), req_target.size());
-    }
+    auto parsed_url = http_request.url();
+
+    std::string path = parsed_url.path();
 
     auto matched_it = routes_->end();
     size_t max_len = 0;
@@ -79,7 +76,7 @@ void Revres::HttpSession::process_request() {
 
     if (matched_it != routes_->end()) {
         try {
-            msg = matched_it->second(request_);  // Handle the request using the registered handler
+            msg = matched_it->second(http_request);  // Handle the request using the registered handler
         } catch (const std::exception& e) {
             spdlog::error("Error handling request: {}", e.what());
             msg = ResponseFactory::internal_server_error(

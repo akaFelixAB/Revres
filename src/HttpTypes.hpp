@@ -20,16 +20,22 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace Revres {
+
+class HttpRequest;
 
 // Forward declaration of HTTP types from Boost.Beast
 namespace http = boost::beast::http;
 
+// Type alias for HTTP response with string body
+using HttpResponse = http::response<http::string_body>;
+
 // Route handler function
 using Handler = std::function<
     http::message_generator(
-        const http::request<http::string_body>&
+        const HttpRequest&
     )
 >;
 

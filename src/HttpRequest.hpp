@@ -14,8 +14,9 @@
 
 #pragma once
 
-#include <string_view>
 #include <optional>
+#include <string_view>
+#include <vector>
 
 #include <boost/url.hpp>
 
@@ -35,7 +36,7 @@ public:
     using RawRequest = http::request<http::string_body>;
 
     explicit HttpRequest(RawRequest&& raw);
-    
+
     HttpRequest(const RawRequest& raw) = delete;
 
     [[nodiscard]] Status status() const noexcept { return status_; }

@@ -13,6 +13,8 @@
 // limitations under the License.
 
 #include "Router.hpp"
+#include "ResponseFactory.hpp"
+#include "HttpRequest.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/benchmark/catch_benchmark.hpp>
@@ -21,14 +23,13 @@ TEST_CASE("Router::match", "[router][match][benchmark]") {
     using namespace Revres;
 
     // Handler that returns a simple HTTP 200 OK response
-    Handler handler =
-        [](const http::request<http::string_body>& req)
-            -> http::message_generator {
-            return http::response<http::string_body>{
-                http::status::ok,
-                req.version()
-            };
-        };
+    Handler handler = [](const HttpRequest& req) {
+        return ResponseFactory::ok(
+            req.raw().version(),
+            req.raw().keep_alive(),
+            "OK"
+        );
+    };
 
     Router router;
 

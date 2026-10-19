@@ -13,6 +13,8 @@
 // limitations under the License.
 
 #include "Router.hpp"
+#include "ResponseFactory.hpp"
+#include "HttpRequest.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -33,10 +35,12 @@ TEST_CASE(
     using namespace Revres;
     Router router;
 
-    auto handler = [](const http::request<http::string_body>& req) {
-        return http::response<http::string_body>{
-            http::status::ok, req.version()
-        };
+    Handler handler = [](const HttpRequest& req) {
+        return ResponseFactory::ok(
+            req.raw().version(),
+            req.raw().keep_alive(),
+            "OK"
+        );
     };
 
     // Add a routes
@@ -208,10 +212,12 @@ TEST_CASE("Router::add_route throws for invalid patterns", "[router][pattern-nor
     using namespace Revres;
     Router router;
 
-    auto handler = [](const http::request<http::string_body>& req) {
-        return http::response<http::string_body>{
-            http::status::ok, req.version()
-        };
+    Handler handler = [](const HttpRequest& req) {
+        return ResponseFactory::ok(
+            req.raw().version(),
+            req.raw().keep_alive(),
+            "OK"
+        );
     };
 
     // Test invalid patterns
