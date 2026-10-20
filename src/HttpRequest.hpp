@@ -64,6 +64,10 @@ public:
     [[nodiscard]] std::optional<std::string> query(std::string_view key) const;
     [[nodiscard]] std::vector<std::string> query_all(std::string_view key) const;
 
+    [[nodiscard]] std::optional<std::string_view> path_parameter(
+        std::string_view name
+    ) const noexcept;
+
     [[nodiscard]] boost::urls::url_view url() const noexcept {
         return boost::urls::url_view(url_);
     }
@@ -73,10 +77,18 @@ public:
     }
 
 private:
+    friend class HttpSession;
+
     RawRequest raw_;
 
     boost::urls::url url_;
+    std::vector<std::pair<std::string_view, std::string_view>> path_parameters_;
     Status status_ = Status::Ok;
+
+    void set_path_parameters(
+        const std::vector<std::string>& names,
+        const std::vector<std::string_view>& values
+    );
 };
 
 }  // namespace Revres

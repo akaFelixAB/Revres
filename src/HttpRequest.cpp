@@ -14,6 +14,7 @@
 
 #include "HttpRequest.hpp"
 
+#include <algorithm>
 #include <boost/url.hpp>
 
 namespace Revres {
@@ -73,6 +74,34 @@ std::vector<std::string> HttpRequest::query_all(std::string_view key) const {
     }
 
     return values;
+}
+
+std::optional<std::string_view> HttpRequest::path_parameter(
+    std::string_view name
+) const noexcept {
+    for (const auto& [parameter_name, parameter_value] : path_parameters_) {
+        if (parameter_name == name) {
+            return parameter_value;
+        }
+    }
+
+    return std::nullopt;
+}
+
+void HttpRequest::set_path_parameters(
+    const std::vector<std::string>& names,
+    const std::vector<std::string_view>& values
+) {
+    path_parameters_.clear();
+    path_parameters_.reserve(
+        std::min(names.size(), values.size())
+    );
+
+    for (std::size_t index = 0;
+         index < names.size() && index < values.size();
+         ++index) {
+        path_parameters_.emplace_back(names[index], values[index]);
+    }
 }
 
 }  // namespace Revres
