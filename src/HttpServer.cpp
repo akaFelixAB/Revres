@@ -24,35 +24,106 @@
 
 namespace Revres {
 
-void HttpServer::load_routes_from_config(const ServerConfig& config) {
-    spdlog::info("Loading routes from configuration");
-    for (const auto& r : config.routes_) {
-        spdlog::info("Loading route: {}", r.path_);
-        if (r.type_ == RouteType::Static) {
-            // Register a static file handler for the route
-            pimpl_->route(r.path_, StaticFileHandler(r.root_, r.index_));
-        } else if (r.type_ == RouteType::Proxy) {
-            // Register a proxy handler for the route
-            spdlog::warn("Proxy route handling is not implemented yet");
-        }
+void HttpServer::load_routes_from_config(ServerConfig& config) {
+    for (auto& route_config : config.routes_) {
+        route(route_config);
     }
 }
 
-void HttpServer::Impl::on_accept(boost::system::error_code ec, tcp::socket socket) {
-    if (!ec) {
-        std::make_shared<HttpSession>(std::move(socket), routes_)->start();
-    }
-    accept_request();
-    spdlog::info("New connection accepted");
-}
-
-void HttpServer::Impl::accept_request() {
-    acceptor_.async_accept(
-        beast::bind_front_handler(
-            &Impl::on_accept,
-            shared_from_this()  // safe call to shared_from_this()
+HttpServer::HttpServer(
+    net::io_context& ioc,
+    const ServerConfig& config
+) :
+    acceptor_(ioc),
+    config_(config),
+    router_(std::make_shared<Router>()) {
+    const tcp::endpoint endpoint(
+        net::ip::make_address(config_.host_),
+        static_cast<boost::asio::ip::port_type>(
+            config_.port_
         )
     );
+
+    acceptor_.open(endpoint.protocol());
+    acceptor_.set_option(net::socket_base::reuse_address(true));
+    acceptor_.bind(endpoint);
+    acceptor_.listen(net::socket_base::max_listen_connections);
+
+    load_routes_from_config(config_);
+    router_->freeze();
+}
+
+void HttpServer::route(RouteConfig& route_config) {
+    Handler handler;
+
+    switch (route_config.type_) {
+    case RouteType::Static:
+        handler = StaticFileHandler(
+            route_config.root_,
+            route_config.index_
+        );
+        break;
+
+    case RouteType::Proxy:
+        spdlog::warn(
+            "Proxy route is not implemented: {}",
+            route_config.path_
+        );
+        return;
+    }
+
+    for (const auto method : route_config.methods_) {
+        spdlog::debug(
+            "Registering route: {} {}",
+            http::to_string(method),
+            route_config.path_
+        );
+        router_->add_route(
+            method,
+            route_config.path_,
+            handler
+        );
+    }
+}
+
+void HttpServer::run() {
+    spdlog::info(
+        "Server is running on {}:{}",
+        config_.host_,
+        config_.port_
+    );
+
+    accept_request();
+}
+
+void HttpServer::accept_request() {
+    acceptor_.async_accept(
+        net::make_strand(acceptor_.get_executor()),
+        beast::bind_front_handler(
+            &HttpServer::on_accept,
+            this
+        )
+    );
+}
+
+void HttpServer::on_accept(
+    boost::system::error_code ec,
+    tcp::socket socket
+) {
+    if (ec) {
+        spdlog::error(
+            "Failed to accept connection: {}",
+            ec.message()
+        );
+    } else {
+        std::make_shared<HttpSession>(
+            std::move(socket),
+            router_,
+            config_.timeout_seconds_
+        )->start();
+    }
+
+    accept_request();
 }
 
 }  // namespace Revres
