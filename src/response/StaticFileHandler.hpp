@@ -15,7 +15,7 @@
 
 #pragma once
 
-#include "HttpTypes.hpp"
+#include "http/HttpTypes.hpp"
 
 #include <filesystem>
 #include <string>

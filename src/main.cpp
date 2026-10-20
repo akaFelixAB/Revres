@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ConfigLoader.hpp"
-#include "HttpServer.hpp"
-#include "Logger.hpp"
+#include "config/ConfigLoader.hpp"
+#include "http/HttpServer.hpp"
+#include "logging/Logger.hpp"
 
 #include <boost/asio.hpp>
 #include <boost/asio/signal_set.hpp>  // For handling signals like SIGINT and SIGTERM

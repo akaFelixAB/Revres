@@ -14,7 +14,7 @@
 
 #include "ConfigLoader.hpp"
 #include "ConfigValidator.hpp"
-#include "HttpTypes.hpp"
+#include "http/HttpTypes.hpp"
 
 #include <spdlog/spdlog.h>
 

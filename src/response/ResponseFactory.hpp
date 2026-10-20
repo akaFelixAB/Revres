@@ -18,7 +18,7 @@
 
 #include <string_view>
 
-#include "HttpTypes.hpp"
+#include "http/HttpTypes.hpp"
 
 namespace Revres {
 

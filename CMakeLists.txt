@@ -44,17 +44,17 @@ endif()
 
 # Build Targets
 add_library(RevresCore STATIC
-    src/ConfigLoader.cpp
-    src/ConfigValidator.cpp
-    src/ConfigException.cpp
-    src/ResponseFactory.cpp
-    src/MimeTypes.cpp
-    src/HttpServer.cpp
-    src/HttpSession.cpp
-    src/Logger.cpp
-    src/Router.cpp
-    src/HttpRequest.cpp
-    src/StaticFileHandler.cpp
+    src/config/ConfigLoader.cpp
+    src/config/ConfigValidator.cpp
+    src/config/ConfigException.cpp
+    src/mime/MimeTypes.cpp
+    src/http/HttpServer.cpp
+    src/http/HttpSession.cpp
+    src/http/HttpRequest.cpp
+    src/response/ResponseFactory.cpp
+    src/response/StaticFileHandler.cpp
+    src/logging/Logger.cpp
+    src/routing/Router.cpp
 )
 
 target_link_libraries(RevresCore PUBLIC 

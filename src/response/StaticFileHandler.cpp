@@ -14,10 +14,10 @@
 
 #include "StaticFileHandler.hpp"
 
-#include "HttpRequest.hpp"
-#include "MimeTypes.hpp"
-#include "ResponseFactory.hpp"
-#include "HttpTypes.hpp"
+#include "http/HttpRequest.hpp"
+#include "mime/MimeTypes.hpp"
+#include "response/ResponseFactory.hpp"
+#include "http/HttpTypes.hpp"
 
 #include <boost/beast/http.hpp>
 
