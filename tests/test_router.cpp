@@ -71,8 +71,8 @@ TEST_CASE(
         CHECK(
             router.match(http::verb::get, "/users/static")
                 .value()
-                .route_.get()
-                .parameter_names_.empty()
+                .route_->
+                parameter_names_.empty()
         );
 
         // Test matching non-existent route
@@ -105,8 +105,14 @@ TEST_CASE(
         CHECK(
             router.match(http::verb::get, "/username/abc")
                 .value()
-                .route_.get()
-                .parameter_names_[0] == "id"
+                .route_->
+                parameter_names_[0] == "id"
+        );
+        CHECK(
+            router.match(http::verb::get, "/username/abc")
+                .value()
+                .route_->
+                parameter_names_.size() == 1
         );
 
         // Test matching the parameter route
@@ -125,8 +131,8 @@ TEST_CASE(
         CHECK(
             router.match(http::verb::get, "/username/456/profile")
                 .value()
-                .route_.get()
-                .parameter_names_[0] == "id"
+                .route_->
+                parameter_names_[0] == "id"
         );
 
         // Test matching the third parameter route
@@ -141,8 +147,8 @@ TEST_CASE(
         CHECK(
             router.match(http::verb::get, "/username/789/settings")
                 .value()
-                .route_.get()
-                .parameter_names_[0] == "UserId"
+                .route_->
+                parameter_names_[0] == "UserId"
         );
     }
 
@@ -157,8 +163,8 @@ TEST_CASE(
         CHECK(
             router.match(http::verb::get, "/username/anything/here")
                 .value()
-                .route_.get()
-                .parameter_names_[0] == "path"  // Catch-all parameter name is "*path"
+                .route_->
+                parameter_names_[0] == "path"  // Catch-all parameter name is "*path"
         );
         CHECK(
             router.match(http::verb::get, "/username/anything/here")
@@ -166,12 +172,9 @@ TEST_CASE(
                 .parameter_values_[0] == "anything/here"  // Catch-all captures the rest of the path
         );
 
-        // Test matching the catch-all route with no additional path
-        // This shouldn't match the catch-all route because the catch-all
-        // requires at least one segment after /username/
-        // Therefore, it should not match and return std::nullopt
+        // A trailing slash is normalized to the registered /username route.
         REQUIRE(
-            !router.match(http::verb::get, "/username/").has_value()
+            router.match(http::verb::get, "/username/").has_value()
         );
     }
 
@@ -186,8 +189,8 @@ TEST_CASE(
         CHECK(
             router.match(http::verb::get, "/users/static?query=1")
                 .value()
-                .route_.get()
-                .parameter_names_.empty()
+                .route_->
+                parameter_names_.empty()
         );
 
         // Test matching the query string with the catch-all route
@@ -197,8 +200,8 @@ TEST_CASE(
         CHECK(
             router.match(http::verb::get, "/username/anything/here?query=1")
                 .value()
-                .route_.get()
-                .parameter_names_[0] == "path"  // Catch-all parameter name is "*path"
+                .route_->
+                parameter_names_[0] == "path"  // Catch-all parameter name is "*path"
         );
         CHECK(
             router.match(http::verb::get, "/username/anything/here?query=1")
@@ -207,6 +210,67 @@ TEST_CASE(
         );
     }
 };
+
+TEST_CASE(
+    "Router::match distinguishes unsupported methods from missing paths",
+    "[router][match][method]"
+) {
+    using namespace Revres;
+    Router router;
+
+    Handler handler = [](const HttpRequest& req) {
+        return ResponseFactory::ok(
+            req.raw().version(),
+            req.raw().keep_alive(),
+            "OK"
+        );
+    };
+
+    router.add_route(http::verb::get, "/resource", handler);
+
+    const auto unsupported = router.match(
+        http::verb::post,
+        "/resource"
+    );
+
+    REQUIRE(unsupported.has_value());
+    CHECK(unsupported->route_ == nullptr);
+    CHECK(unsupported->allowed_methods_ == "GET");
+
+    CHECK_FALSE(
+        router.match(http::verb::post, "/missing").has_value()
+    );
+}
+
+TEST_CASE(
+    "Router exposes path parameters by name and freezes route registration",
+    "[router][match][parameters][freeze]"
+) {
+    using namespace Revres;
+    Router router;
+
+    Handler handler = [](const HttpRequest& req) {
+        return ResponseFactory::ok(
+            req.raw().version(),
+            req.raw().keep_alive(),
+            "OK"
+        );
+    };
+
+    router.add_route(http::verb::get, "/users/:id", handler);
+
+    const auto matched = router.match(http::verb::get, "/users/42/");
+    REQUIRE(matched.has_value());
+    REQUIRE(matched->parameter("id").has_value());
+    CHECK(*matched->parameter("id") == "42");
+    CHECK_FALSE(matched->parameter("missing").has_value());
+
+    router.freeze();
+    CHECK_THROWS_AS(
+        router.add_route(http::verb::get, "/after-freeze", handler),
+        std::logic_error
+    );
+}
 
 TEST_CASE("Router::add_route throws for invalid patterns", "[router][pattern-normalization]") {
     using namespace Revres;
