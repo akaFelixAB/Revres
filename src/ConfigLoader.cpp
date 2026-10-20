@@ -14,10 +14,45 @@
 
 #include "ConfigLoader.hpp"
 #include "ConfigValidator.hpp"
+#include "HttpTypes.hpp"
 
 #include <spdlog/spdlog.h>
 
 namespace Revres {
+
+http::verb ConfigLoader::http_verb_from_string(std::string_view value) const {
+    if (value == "GET") {
+        return http::verb::get;
+    } else if (value == "HEAD") {
+        return http::verb::head;
+    } else if (value == "POST") {
+        return http::verb::post;
+    } else if (value == "PUT") {
+        return http::verb::put;
+    } else if (value == "DELETE") {
+        return http::verb::delete_;
+    } else {
+        spdlog::warn("Unknown HTTP verb: '{}', defaulting to 'GET'", value);
+        return http::verb::get;
+    }
+}
+
+std::string_view ConfigLoader::http_verb_to_string(http::verb verb) const {
+    switch (verb) {
+    case http::verb::get:
+        return "GET";
+    case http::verb::head:
+        return "HEAD";
+    case http::verb::post:
+        return "POST";
+    case http::verb::put:
+        return "PUT";
+    case http::verb::delete_:
+        return "DELETE";
+    default:
+        return "UNKNOWN";
+    }
+}
 
 std::optional<RouteType> ConfigLoader::route_type_from_string(std::string_view value) const {
     if (value == "static") {
@@ -81,6 +116,17 @@ ServerConfig ConfigLoader::load_file(const std::string& file_path) const {
                     route.root_ = (*route_tbl)["root"].value_or("./public");
                     route.index_ = (*route_tbl)["index"].value_or("index.html");
                     route.upstream_ = (*route_tbl)["upstream"].value_or("");
+                    route.methods_.clear();
+                    if (auto methods_array = (*route_tbl)["methods"].as_array()) {
+                        for (const auto& method_elem : *methods_array) {
+                            if (auto method_str = method_elem.as_string()) {
+                                route.methods_.push_back(http_verb_from_string(method_str->get()));
+                            }
+                        }
+                    } else {
+                        // If no methods are specified, default to GET
+                        route.methods_.push_back(http::verb::get);
+                    }
 
                     if (!route.path_.empty()) {
                         config.routes_.push_back(route);

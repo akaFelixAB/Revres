@@ -14,6 +14,8 @@
 
 #pragma once
 
+#include "HttpTypes.hpp"
+
 #include <toml++/toml.hpp>
 #include <unordered_map>
 
@@ -34,6 +36,7 @@ struct RouteConfig {
     std::string root_;      // Static file root directory
     std::string index_;     // Default index file
     std::string upstream_;  // Reverse proxy target address
+    std::vector<http::verb> methods_;  // Allowed HTTP methods for this route
 };
 
 struct LoggingConfig {
@@ -61,6 +64,9 @@ public:
     ~ConfigLoader() = default;
 
     [[nodiscard]] ServerConfig load_file(const std::string& file_path) const;
+
+    [[nodiscard]] http::verb http_verb_from_string(std::string_view value) const;
+    [[nodiscard]] std::string_view http_verb_to_string(http::verb verb) const;
     
     [[nodiscard]] std::optional<RouteType> route_type_from_string(std::string_view value) const;
     [[nodiscard]] std::string_view route_type_to_string(RouteType type) const;

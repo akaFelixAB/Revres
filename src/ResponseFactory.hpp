@@ -18,39 +18,53 @@
 
 #include <string_view>
 
+#include "HttpTypes.hpp"
+
 namespace Revres {
 
 namespace http = boost::beast::http;
-using response = http::response<http::string_body>;
 
 class ResponseFactory final {
 public:
-    [[nodiscard]] static response error(
+    [[nodiscard]] static HttpResponse ok(
+        unsigned version,
+        bool keep_alive = false,
+        std::string_view message = "OK"
+    );
+
+    [[nodiscard]] static HttpResponse error(
         http::status status,
         unsigned version,
         bool keep_alive = false,
         std::string_view message = "Internal Server Error"
     );
 
-    [[nodiscard]] static response bad_request(
+    [[nodiscard]] static HttpResponse bad_request(
         unsigned version,
         bool keep_alive = false,
         std::string_view message = "400 Bad Request"
     );
 
-    [[nodiscard]] static response forbidden(
+    [[nodiscard]] static HttpResponse forbidden(
         unsigned version,
         bool keep_alive = false,
         std::string_view message = "403 Forbidden"
     );
 
-    [[nodiscard]] static response not_found(
+    [[nodiscard]] static HttpResponse not_found(
         unsigned version,
         bool keep_alive = false,
         std::string_view message = "404 Not Found"
     );
 
-    [[nodiscard]] static response internal_server_error(
+    [[nodiscard]] static HttpResponse method_not_allowed(
+        unsigned version,
+        bool keep_alive = false,
+        std::string_view allow_methods = "GET, HEAD",
+        std::string_view message = "405 Method Not Allowed"
+    );
+
+    [[nodiscard]] static HttpResponse internal_server_error(
         unsigned version,
         bool keep_alive = false,
         std::string_view message = "Internal Server Error"

@@ -14,7 +14,9 @@
 
 #include "Router.hpp"
 
+#include <algorithm>
 #include <spdlog/spdlog.h>
+#include "boost/url.hpp"
 
 namespace {
 
@@ -36,60 +38,192 @@ static inline std::size_t common_prefix(
     return i;
 }
 
-void validate_pattern(std::string_view pattern) {
-    if (pattern.empty() || pattern.front() != '/') {
-        throw std::invalid_argument(
-            "Route pattern must start with '/'"
-        );
+// Build a string of allowed HTTP methods from the route map.
+[[nodiscard]] std::string build_allowed_methods(
+    const std::unordered_map<
+        boost::beast::http::verb,
+        std::shared_ptr<const Revres::Route>
+    >& routes
+) {
+    std::vector<std::string_view> methods;
+    methods.reserve(routes.size());
+
+    for (const auto& [method, route] : routes) {
+        methods.emplace_back(boost::beast::http::to_string(method));
     }
+
+    std::sort(methods.begin(), methods.end());
+
+    std::string result;
+    for (const auto method : methods) {
+        if (!result.empty()) {
+            result += ", ";
+        }
+        result += method;
+    }
+
+    return result;
+}
+
+enum class RoutePatternError {
+    None,
+    InvalidPattern,
+    InvalidParameterName,
+    InvalidStaticSegment,
+    InvalidDotSegment,
+    CatchAllNotLast,
+    MultipleCatchAll
+};
+
+[[nodiscard]] constexpr std::string_view to_string(RoutePatternError error) {
+    switch (error) {
+        case RoutePatternError::None:
+            return "none";
+        case RoutePatternError::InvalidPattern:
+            return "invalid route pattern";
+        case RoutePatternError::InvalidParameterName:
+            return "invalid parameter name";
+        case RoutePatternError::InvalidStaticSegment:
+            return "invalid static path segment";
+        case RoutePatternError::InvalidDotSegment:
+            return "dot segments are not allowed";
+        case RoutePatternError::CatchAllNotLast:
+            return "catch-all must be the final segment";
+        case RoutePatternError::MultipleCatchAll:
+            return "multiple catch-all segments";
+    }
+
+    return "unknown route pattern error";
+}
+
+struct NormalizedRoutePattern {
+    std::string encoded_pattern_;
+    std::vector<std::string> parameter_names_;
+    RoutePatternError error_ = RoutePatternError::None;
+};
+
+[[nodiscard]] NormalizedRoutePattern parse_route_pattern(
+    std::string_view pattern
+) {
+    namespace urls = boost::urls;
+
+    NormalizedRoutePattern result;
+
+    if (pattern.empty() || pattern.front() != '/') {
+        result.error_ = RoutePatternError::InvalidPattern;
+        return result;
+    }
+
+    if (pattern == "/") {
+        result.encoded_pattern_ = "/";
+        return result;
+    }
+
+    if (pattern.back() == '/') {
+        pattern.remove_suffix(1);
+    }
+
+    std::string normalized;
+    normalized.reserve(pattern.size());
 
     std::size_t position = 0;
 
-    while (true) {
-        const auto marker = pattern.find_first_of(":*", position);
+    while (position < pattern.size()) {
+        const auto next = pattern.find('/', position + 1);
 
-        if (marker == std::string_view::npos) {
-            return;
-        }
+        const auto segment_end =
+            next == std::string_view::npos
+                ? pattern.size()
+                : next;
 
-        // :name and *name must be at the beginning of a path segment.
-        if (marker == 0 || pattern[marker - 1] != '/') {
-            throw std::invalid_argument(
-                "Parameter marker must start a path segment"
-            );
-        }
-
-        auto end = pattern.find('/', marker);
-        if (end == std::string_view::npos) {
-            end = pattern.size();
-        }
-
-        const auto name = pattern.substr(
-            marker + 1,
-            end - marker - 1
+        const auto segment = pattern.substr(
+            position + 1,
+            segment_end - position - 1
         );
 
-        if (name.empty()) {
-            throw std::invalid_argument(
-                "Parameter name must not be empty"
+        if (segment.empty()) {
+            result.error_ = RoutePatternError::InvalidPattern;
+            return result;
+        }
+
+        if (segment.front() == ':') {
+            if (segment.size() == 1) {
+                result.error_ =
+                    RoutePatternError::InvalidParameterName;
+                return result;
+            }
+
+            result.parameter_names_.emplace_back(
+                segment.substr(1)
+            );
+
+            normalized += '/';
+            normalized += segment;
+        }
+        else if (segment.front() == '*') {
+            if (segment.size() == 1) {
+                result.error_ =
+                    RoutePatternError::InvalidParameterName;
+                return result;
+            }
+
+            if (segment_end != pattern.size()) {
+                result.error_ =
+                    RoutePatternError::CatchAllNotLast;
+                return result;
+            }
+
+            result.parameter_names_.emplace_back(
+                segment.substr(1)
+            );
+
+            normalized += '/';
+            normalized += segment;
+            break;
+        }
+        else {
+            if (segment == "." || segment == "..") {
+                result.error_ =
+                    RoutePatternError::InvalidDotSegment;
+                return result;
+            }
+
+            std::string segment_input;
+            segment_input.reserve(segment.size() + 1);
+            segment_input += '/';
+            segment_input += segment;
+
+            const auto parsed = urls::parse_origin_form(
+                boost::core::string_view(segment_input)
+            );
+
+            if (!parsed) {
+                result.error_ =
+                    RoutePatternError::InvalidStaticSegment;
+                return result;
+            }
+
+            boost::urls::url url = parsed.value();
+            url.normalize_path();
+
+            const auto encoded = url.encoded_path();
+
+            // Remove the synthetic leading '/'.
+            const auto normalized_segment = encoded.substr(1);
+
+            normalized += '/';
+            normalized.append(
+                normalized_segment.data(),
+                normalized_segment.size()
             );
         }
 
-        // Parameter names must occupy an entire path segment and cannot contain ':' or '*'.
-        if (name.find_first_of(":*") != std::string_view::npos) {
-            throw std::invalid_argument(
-                "Parameter must occupy an entire path segment"
-            );
-        }
-
-        if (pattern[marker] == '*' && end != pattern.size()) {
-            throw std::invalid_argument(
-                "Catch-all must be the final path segment"
-            );
-        }
-
-        position = end;
+        position = segment_end;
     }
+
+    result.encoded_pattern_ = std::move(normalized);
+
+    return result;
 }
 
 }
@@ -101,22 +235,54 @@ void Router::add_route(
     const std::string& pattern,
     const Handler& handler
 ) {
-    validate_pattern(pattern);
-    insert_route(method, pattern, handler);
+    if (frozen_.load(std::memory_order_acquire)) {
+        throw std::logic_error(
+            "Cannot add a route after the router has been frozen"
+        );
+    }
+
+    const auto normalized = parse_route_pattern(pattern);
+
+    if (normalized.error_ != RoutePatternError::None) {
+        throw std::invalid_argument(
+            "Invalid route pattern: " + pattern
+        );
+    }
+
+    insert_route(method, normalized.encoded_pattern_, normalized.parameter_names_, handler);
+}
+
+void Router::freeze() noexcept {
+    frozen_.store(true, std::memory_order_release);
 }
 
 std::optional<MatchResult> Router::match(
     http::verb method,
     std::string_view target
 ) const {
-    auto it = roots_.find(method);
-    if (it == roots_.end() || it->second == nullptr) {
-        return std::nullopt;  // No routes since the tree is empty
+    target = target.substr(0, target.find('?'));  // Ignore query string for routing
+
+    if (target.size() > 1 && target.back() == '/') {
+        target.remove_suffix(1);
     }
 
-    std::vector<std::string_view> parameter_values;
+    auto path_match = find_path(target);
 
-    target = target.substr(0, target.find('?'));  // Ignore query string for routing
+    if (!path_match) {
+        return std::nullopt;
+    }
+
+    return match_method(
+        *path_match->node_,
+        method,
+        std::move(path_match->parameter_values_)
+    );
+}
+
+std::optional<Router::PathMatch> Router::find_path(
+    std::string_view target
+) const {
+    std::vector<std::string_view> parameter_values;
 
     // Traverse the radix tree to find a matching route
     auto search = [&](
@@ -124,8 +290,8 @@ std::optional<MatchResult> Router::match(
         const Node* node,
         std::size_t position
     ) -> const Node* {
-    // If we have consumed the entire target string and the current node has a route, we have a match.
-        if (position == target.size() && node->route_) {
+        // If we have consumed the entire target string and the current node has a route, we have a match.
+        if (position == target.size() && !node->routes_.empty()) {
             return node;
         }
 
@@ -189,7 +355,7 @@ std::optional<MatchResult> Router::match(
 
         // If both static and parameter children failed, try catch-all child.
         if (node->catch_all_ && 
-            node->catch_all_->route_ &&
+            !node->catch_all_->routes_.empty() &&
             !remaining.empty() && 
             remaining != "/"
         ) {
@@ -204,14 +370,14 @@ std::optional<MatchResult> Router::match(
         return nullptr;
     };
 
-    const Node* matched = search(search, it->second.get(), 0);
+    const Node* matched = search(search, &roots_, 0);
 
     if (!matched) {
         return std::nullopt;
     }
 
-    return MatchResult{
-        std::cref(matched->route_.value()),
+    return PathMatch{
+        matched,
         std::move(parameter_values)
     };
 }
@@ -237,20 +403,7 @@ Router::Node* Router::insert_static(
         // If the common prefix is less than the length of the child's prefix,
         // split the child node.
         if (n < child.prefix_.size()) {
-            auto suffix = std::make_unique<Node>();
-
-            suffix->type_ = NodeType::Static;
-            suffix->prefix_ = child.prefix_.substr(n);
-            suffix->static_ = std::move(child.static_);
-            suffix->parameter_ = std::move(child.parameter_);
-            suffix->catch_all_ = std::move(child.catch_all_);
-            suffix->route_ = std::move(child.route_);
-
-            child.prefix_.resize(n);
-            child.static_.clear();
-            child.route_.reset();
-
-            child.static_.push_back(std::move(suffix));
+            split_static_child(child, n);
         }
 
         // child.prefix_ is already consumed, so we need to insert the 
@@ -269,6 +422,28 @@ Router::Node* Router::insert_static(
     // Return the newly created child node for further 
     // insertion of the remaining text.
     return result;
+}
+
+void Router::split_static_child(
+    Node& child,
+    std::size_t prefix_length
+) {
+    auto suffix = std::make_unique<Node>();
+
+    suffix->type_ = NodeType::Static;
+    suffix->prefix_ = child.prefix_.substr(prefix_length);
+    suffix->static_ = std::move(child.static_);
+    suffix->parameter_ = std::move(child.parameter_);
+    suffix->catch_all_ = std::move(child.catch_all_);
+    suffix->routes_ = std::move(child.routes_);
+    suffix->allowed_methods_ = std::move(child.allowed_methods_);
+
+    child.prefix_.resize(prefix_length);
+    child.static_.clear();
+    child.routes_.clear();
+    child.allowed_methods_.clear();
+
+    child.static_.push_back(std::move(suffix));
 }
 
 Router::Node* Router::insert_special(
@@ -310,16 +485,14 @@ Router::Node* Router::insert_special(
 
 void Router::insert_route(
     http::verb method,
-    const std::string& pattern,
+    std::string_view pattern,
+    std::vector<std::string> parameter_names,
     const Handler& handler
 ) {
     // Insert the static part of the pattern into the radix tree
-    if (!roots_[method]) {
-        roots_[method] = std::make_unique<Node>();
-    }
-    Node* current = roots_[method].get();
-    std::vector<std::string> parameter_names;
+    Node* current = &roots_;
     std::string_view remaining_pattern = pattern;
+
     while (!remaining_pattern.empty()) {
         // Find the next parameter or catch-all.
         const auto marker = remaining_pattern.find_first_of(":*");
@@ -341,18 +514,14 @@ void Router::insert_route(
 
         const bool catch_all = remaining_pattern.front() == '*';
 
-        auto end = catch_all
+        const auto segment_end = catch_all
             ? remaining_pattern.size()
             : remaining_pattern.find('/');
 
-        if (end == std::string_view::npos) {
-            end = remaining_pattern.size();
-        }
-
-        // Copy the name into this registration's local list.
-        parameter_names.emplace_back(
-            remaining_pattern.substr(1, end - 1)
-        );
+        const auto parameter_end =
+            segment_end == std::string_view::npos
+                ? remaining_pattern.size()
+                : segment_end;
 
         current = insert_special(
             *current,
@@ -362,16 +531,42 @@ void Router::insert_route(
         );
 
         // Keep the following '/' for static insertion.
-        remaining_pattern.remove_prefix(end);
+        remaining_pattern.remove_prefix(parameter_end);
     }
 
-    if (current->route_) {
+    if (current->routes_.contains(method)) {
         throw std::invalid_argument("Duplicate route");
     }
 
-    current->route_ = Route{
-        std::cref(handler),
-        std::move(parameter_names)
+    current->routes_.emplace(
+        method,
+        std::make_shared<Route>(Route{
+            handler,
+            std::move(parameter_names)
+        })
+    );
+    current->allowed_methods_ = build_allowed_methods(current->routes_);
+}
+
+std::optional<MatchResult> Router::match_method(
+    const Node& node,
+    http::verb method,
+    std::vector<std::string_view>&& parameter_values
+) const {
+    const auto route_it = node.routes_.find(method);
+
+    if (route_it == node.routes_.end()) {
+        return MatchResult{
+            nullptr,
+            std::move(parameter_values),
+            node.allowed_methods_
+        };
+    }
+
+    return MatchResult{
+        route_it->second,
+        std::move(parameter_values),
+        node.allowed_methods_
     };
 }
 

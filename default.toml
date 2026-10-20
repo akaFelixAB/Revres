@@ -17,6 +17,14 @@ path = "/"
 type = "static"
 root = "./public/"
 index = "index.html"
+methods = ["GET", "HEAD"]
+
+[[routes]]
+path = "/*path"
+type = "static"
+root = "./public/"
+index = "index.html"
+methods = ["GET", "HEAD"]
 
 # [[routes]]
 # path = "/api"

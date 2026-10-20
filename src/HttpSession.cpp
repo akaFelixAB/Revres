@@ -15,6 +15,8 @@
 #include "HttpSession.hpp"
 
 #include "ResponseFactory.hpp"
+#include "StaticFileHandler.hpp"
+#include "HttpRequest.hpp"
 
 #include <boost/url.hpp>
 
@@ -22,14 +24,42 @@
 
 namespace Revres {
 
-void Revres::HttpSession::on_read(boost::system::error_code ec, std::size_t bytes_transferred) {
-    if (!ec) {
-        process_request();
+HttpSession::HttpSession(
+    tcp::socket&& socket, 
+    std::shared_ptr<const Router> router,
+    int timeout_seconds
+) :
+    socket_(std::move(socket)), 
+    router_(std::move(router)),
+    timeout_seconds_(timeout_seconds) {}
+
+void HttpSession::on_read(
+    boost::system::error_code ec,
+    std::size_t
+) {
+    if (ec == http::error::end_of_stream) {
+        boost::system::error_code shutdown_ec;
+        socket_.socket().shutdown(
+            tcp::socket::shutdown_send,
+            shutdown_ec
+        );
+        return;
     }
+
+    if (ec) {
+        spdlog::error(
+            "Failed to read request: {}",
+            ec.message()
+        );
+        return;
+    }
+
+    process_request();
 }
 
 void Revres::HttpSession::read_request() {
-    auto self = shared_from_this();
+    request_ = {};  // Clear the previous request
+
     http::async_read(
         socket_,
         buffer_,
@@ -39,57 +69,56 @@ void Revres::HttpSession::read_request() {
 }
 
 void Revres::HttpSession::process_request() {
-    socket_.expires_after(std::chrono::seconds(30));
+    socket_.expires_after(
+        std::chrono::seconds(timeout_seconds_)
+    );
 
     // Save the keep-alive status and the request path for routing
-    bool keep_alive = request_.keep_alive();
+    const bool keep_alive = request_.keep_alive();
+    // Save the version for the response
+    const auto version = request_.version();
 
     // Parse the request target (e.g., "/path/to/file?query=1")
-    std::string_view req_target = request_.target();
-    auto parsed_url = boost::urls::parse_origin_form(req_target);
+    HttpRequest http_request(std::move(request_));
 
-    std::string path;
-    if (parsed_url.has_value()) {
-        spdlog::debug("Parsed URL: {}", parsed_url->buffer());
-        path.assign(parsed_url->path().data(), parsed_url->path().size());
-    } else {
-        path.assign(req_target.data(), req_target.size());
+    auto parsed_url = http_request.url();
+
+    std::string path = parsed_url.path();
+
+    if (!router_) {
+        throw std::invalid_argument("HttpSession requires a Router");
     }
 
-    auto matched_it = routes_->end();
-    size_t max_len = 0;
-
-    for (auto it = routes_->begin(); it != routes_->end(); it++) {
-        const std::string& route_prefix = it->first;
-        if (path.rfind(route_prefix, 0) == 0) {  // Match if the path starts with the route prefix
-            if (route_prefix.length() > max_len) {
-                max_len = route_prefix.length();
-                matched_it = it;
-            }
-        }
-    }
-
-    spdlog::debug("Matched route: {}", matched_it != routes_->end() ? matched_it->first : "None");
+    auto matched = router_->match(
+        http_request.method(),
+        http_request.path()
+    );
 
     http::message_generator msg = ResponseFactory::internal_server_error(
-        request_.version(),
+        version,
         keep_alive,
         "Internal Server Error"
     );
 
-    if (matched_it != routes_->end()) {
-        try {
-            msg = matched_it->second(request_);  // Handle the request using the registered handler
-        } catch (const std::exception& e) {
-            spdlog::error("Error handling request: {}", e.what());
-            msg = ResponseFactory::internal_server_error(
-                request_.version(),
-                keep_alive,
-                "Internal Server Error"
-            );
-        }
+    if (!matched) {
+        msg = ResponseFactory::not_found(
+            version,
+            keep_alive,
+            "Not Found"
+        );
+    } else if (matched->route_ == nullptr) {
+        msg = ResponseFactory::method_not_allowed(
+            version,
+            keep_alive,
+            matched->allowed_methods_,
+            "405 Method Not Allowed"
+        );
     } else {
-        msg = ResponseFactory::not_found(request_.version(), keep_alive, "404 Not Found");
+        http_request.set_path_parameters(
+            matched->route_->parameter_names_,
+            matched->parameter_values_
+        );
+        msg = matched->route_->handler_(http_request);
     }
 
     // Write the response back to the client
@@ -97,8 +126,19 @@ void Revres::HttpSession::process_request() {
     beast::async_write(
         socket_,
         std::move(msg),
-        [self, keep_alive](boost::system::error_code ec, std::size_t bytes_transferred) {
-            if (!ec && keep_alive) {
+        [self, keep_alive](
+            boost::system::error_code ec,
+            std::size_t
+        ) {
+            if (ec) {
+                spdlog::error(
+                    "Failed to write response: {}",
+                    ec.message()
+                );
+                return;
+            }
+
+            if (keep_alive) {
                 self->read_request();
             }
         }

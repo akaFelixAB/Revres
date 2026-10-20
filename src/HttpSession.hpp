@@ -15,6 +15,7 @@
 #pragma once
 
 #include "HttpTypes.hpp"
+#include "Router.hpp"
 
 #include <boost/asio.hpp>
 #include <boost/beast.hpp>
@@ -31,13 +32,13 @@ using tcp = net::ip::tcp;
 // Manages the lifetime of an HTTP session for a single connection
 class HttpSession : public std::enable_shared_from_this<HttpSession> {
     beast::tcp_stream socket_;                             // Socket for the session
-    http::request<http::string_body> request_;             // Request received from the client
+    http::request<http::string_body> request_;            // Request received from the client
     beast::flat_buffer buffer_;                            // Buffer for reading
-    std::shared_ptr<const Revres::RouteTable> routes_;  // Map of routes to handlers
+    std::shared_ptr<const Revres::Router> router_;         // Shared pointer to the router for handling requests
+    int timeout_seconds_;
 
 public:
-    HttpSession(tcp::socket socket, std::shared_ptr<const Revres::RouteTable> routes) :
-        socket_(std::move(socket)), routes_(std::move(routes)) {}
+    HttpSession(tcp::socket&& socket, std::shared_ptr<const Router> router, int timeout_seconds = 30);
 
     inline void start() {
         read_request();

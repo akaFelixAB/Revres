@@ -16,6 +16,8 @@
 
 #include "HttpTypes.hpp"
 
+#include <atomic>
+
 namespace Revres {
 
 class Router final {
@@ -27,6 +29,9 @@ public:
         const std::string& pattern,
         const Handler& handler
     );
+
+    // Call after all routes have been registered and before publishing Router.
+    void freeze() noexcept;
 
     [[nodiscard]] std::optional<MatchResult> match(
         http::verb method,
@@ -57,17 +62,31 @@ private:
         // Catch-all child node in the radix tree
         std::unique_ptr<Node> catch_all_;
 
-        // Present only when a complete route ends at this node.
-        std::optional<Route> route_;
+        // This is a map of HTTP methods to their corresponding routes.
+        std::unordered_map<http::verb, std::shared_ptr<const Route>> routes_;
+
+        // Cached Allow header value for this node.
+        std::string allowed_methods_;
     };
 
-    // Root nodes for each HTTP method.
-    std::map<http::verb, std::unique_ptr<Node>> roots_;
+    struct PathMatch {
+        const Node* node_;
+        std::vector<std::string_view> parameter_values_;
+    };
+
+    // Root node for all HTTP methods.
+    Node roots_;
+    std::atomic<bool> frozen_ = false;
 
     // Insert a static string into the radix tree.
     Node* insert_static(
         Node& parent,
         std::string_view text
+    );
+
+    void split_static_child(
+        Node& child,
+        std::size_t prefix_length
     );
 
     // Insert a parameter or catch-all token into the radix tree.
@@ -78,9 +97,22 @@ private:
 
     void insert_route(
         http::verb method,
-        const std::string& pattern,
+        std::string_view pattern,
+        std::vector<std::string> parameter_names,
         const Handler& handler
     );
+
+    [[nodiscard]] std::optional<PathMatch> find_path(
+        std::string_view target
+    ) const;
+
+    // Match the method and path based on the radix tree
+    // Returns a MatchResult if a match is found, otherwise returns std::nullopt
+    std::optional<MatchResult> match_method(
+        const Node& node,
+        http::verb method,
+        std::vector<std::string_view>&& parameter_values
+    ) const;
 };
 
 }  // namespace Revres
