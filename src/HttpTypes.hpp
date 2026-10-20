@@ -47,15 +47,37 @@ using PathParameter = std::pair<std::string, std::string>;
 
 // Matched route with its handler and extracted path parameters
 struct Route {
-    std::reference_wrapper<const Handler> handler_;
+    Handler handler_;
     // Extracted path parameters
     std::vector<std::string> parameter_names_;
 };
 
 // Result of a route match attempt
 struct MatchResult {
-    std::reference_wrapper<const Route> route_;
+    std::shared_ptr<const Route> route_;
     std::vector<std::string_view> parameter_values_;
+    std::string allowed_methods_;
+
+    [[nodiscard]] std::optional<std::string_view> parameter(
+        std::string_view name
+    ) const noexcept {
+        if (!route_) {
+            return std::nullopt;
+        }
+
+        for (
+            std::size_t index = 0;
+            index < route_->parameter_names_.size() &&
+            index < parameter_values_.size();
+            index++
+        ) {
+            if (route_->parameter_names_[index] == name) {
+                return parameter_values_[index];
+            }
+        }
+
+        return std::nullopt;
+    }
 };
 
 // Type alias for route table
