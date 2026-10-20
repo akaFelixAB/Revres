@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "MimeTypes.hpp"
+#include "mime/MimeTypes.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 

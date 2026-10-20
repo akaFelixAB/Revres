@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "Router.hpp"
-#include "ResponseFactory.hpp"
-#include "HttpRequest.hpp"
+#include "routing/Router.hpp"
+#include "response/ResponseFactory.hpp"
+#include "http/HttpRequest.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/benchmark/catch_benchmark.hpp>

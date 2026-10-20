@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ConfigValidator.hpp"
-#include "ConfigDiagnostic.hpp"
+#include "config/ConfigValidator.hpp"
+#include "config/ConfigDiagnostic.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 

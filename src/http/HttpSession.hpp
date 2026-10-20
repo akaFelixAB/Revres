@@ -14,8 +14,8 @@
 
 #pragma once
 
-#include "HttpTypes.hpp"
-#include "Router.hpp"
+#include "http/HttpTypes.hpp"
+#include "routing/Router.hpp"
 
 #include <boost/asio.hpp>
 #include <boost/beast.hpp>

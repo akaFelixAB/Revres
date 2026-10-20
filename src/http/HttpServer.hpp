@@ -14,10 +14,10 @@
 
 #pragma once
 
-#include "ConfigLoader.hpp"
-#include "Router.hpp"
-#include "HttpTypes.hpp"
-#include "MimeTypes.hpp"
+#include "config/ConfigLoader.hpp"
+#include "routing/Router.hpp"
+#include "http/HttpTypes.hpp"
+#include "mime/MimeTypes.hpp"
 
 #include <boost/asio.hpp>
 #include <boost/beast.hpp>

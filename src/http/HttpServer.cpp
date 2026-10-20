@@ -14,9 +14,9 @@
 
 #include "HttpServer.hpp"
 
-#include "HttpSession.hpp"
-#include "ResponseFactory.hpp"
-#include "StaticFileHandler.hpp"
+#include "http/HttpSession.hpp"
+#include "response/ResponseFactory.hpp"
+#include "response/StaticFileHandler.hpp"
 
 #include <spdlog/spdlog.h>
 

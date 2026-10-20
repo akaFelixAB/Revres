@@ -14,9 +14,9 @@
 
 #include "HttpSession.hpp"
 
-#include "ResponseFactory.hpp"
-#include "StaticFileHandler.hpp"
-#include "HttpRequest.hpp"
+#include "response/ResponseFactory.hpp"
+#include "response/StaticFileHandler.hpp"
+#include "http/HttpRequest.hpp"
 
 #include <boost/url.hpp>
 
